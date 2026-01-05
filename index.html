@@ -83,6 +83,9 @@
             font-size: 14px;
         }
         .suggestion-item:hover { background-color: #f5ded5; }
+        
+        /* Camera UI fixes based on reference */
+        video { object-fit: cover; }
     </style>
 </head>
 <body class="bg-surface text-onSurface min-h-screen relative font-sans selection:bg-primaryContainer selection:text-onPrimaryContainer">
@@ -95,23 +98,25 @@
         <p class="text-onSurfaceVariant font-medium tracking-wide">Memproses data...</p>
     </div>
 
-    <!-- Image Modal Viewer -->
+    <!-- Image Modal Viewer (For History) -->
     <div id="modal-image" class="hidden-view fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4">
         <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white z-20">
             <i data-lucide="x" width="24" height="24"></i>
         </button>
-        <!-- Added referrerpolicy to fix Google Drive image loading -->
         <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl" crossorigin="anonymous" referrerpolicy="no-referrer">
         <p class="text-white/70 mt-4 text-sm">Dokumentasi Kegiatan</p>
     </div>
 
-    <!-- IN-APP CAMERA MODAL -->
+    <!-- IN-APP CAMERA MODAL (ADAPTED FROM PRESENSI MOBILE) -->
     <div id="modal-camera" class="hidden-view fixed inset-0 bg-black z-[80] flex flex-col">
         <div class="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
+             <!-- Video element for stream -->
              <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+             
+             <!-- Hidden canvas for capturing -->
              <canvas id="camera-canvas" class="hidden-view"></canvas>
              
-             <!-- Camera Guides -->
+             <!-- Guides -->
              <div class="absolute inset-0 border-2 border-white/30 pointer-events-none m-8 rounded-lg"></div>
         </div>
         
@@ -120,7 +125,7 @@
                 <i data-lucide="x" width="24" height="24"></i>
             </button>
             
-            <button onclick="app.takePicture()" class="w-20 h-20 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center active:scale-95 transition">
+            <button onclick="app.takePicture()" class="w-20 h-20 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center active:scale-95 transition shadow-lg">
                 <div class="w-16 h-16 rounded-full bg-white border-2 border-black"></div>
             </button>
             
@@ -409,17 +414,15 @@
                         </div>
                     </div>
 
-                    
-                    <div id="compressing-indicator" class="hidden-view p-3 bg-secondaryContainer text-onSecondaryContainer rounded-lg text-xs flex items-center justify-center gap-2">
-                        <i data-lucide="loader" class="animate-spin" width="14" height="14"></i> Mengompres foto...
-                    </div>
-                    
                     <div id="preview-container" class="relative hidden-view">
+                        <!-- Used regular IMG tag instead of objectURL to prevent cleanup issues in WebView -->
                         <img id="img-preview" src="" alt="Preview" class="w-full h-48 object-cover rounded-2xl shadow-sm">
                         <button type="button" onclick="app.clearImage()" class="absolute top-2 right-2 w-8 h-8 bg-surface/80 backdrop-blur rounded-full flex items-center justify-center text-error shadow-sm">
                             <i data-lucide="x" width="18" height="18"></i>
                         </button>
                     </div>
+                    <!-- Hidden input to store Base64 string for saving -->
+                    <input type="hidden" id="final-photo-base64">
                     <input type="hidden" id="existing-photo-url">
                 </div>
             </div>
@@ -522,18 +525,20 @@
             history: [],
             meta: {}, 
             teachers: [],
-            refs: { kegiatan: [], hasil: [] }, // Store references
-            currentPhotoBase64: "",
-            currentPreviewUrl: "", 
+            refs: { kegiatan: [], hasil: [] }, 
+            
+            // --- UPDATED STATE VARIABLES FOR ROBUST CAMERA ---
+            currentPhotoBase64: "", // Now stores full Base64 string directly
             isListening: null,
             selectedDate: null, 
             currentTab: 'list', 
             isAdmin: false,
-            videoStream: null, // For Camera
+            videoStream: null,
+            facingMode: 'environment', // Default to back camera for journals
 
             init: function() {
                 this.initFilters('filter-month', 'filter-year');
-                this.fetchRefs(); // Fetch suggestions on init
+                this.fetchRefs(); 
 
                 const stored = localStorage.getItem('jg_user');
                 if (stored) {
@@ -562,20 +567,29 @@
                 lucide.createIcons();
             },
             
-            // --- IN-APP CAMERA LOGIC ---
+            // --- ROBUST CAMERA LOGIC (Adopted from Presensi Mobile) ---
             startCamera: async function() {
+                // Ensure clean start
+                if(this.videoStream) {
+                    this.videoStream.getTracks().forEach(track => track.stop());
+                }
+                
+                document.getElementById('modal-camera').classList.remove('hidden-view');
+                
                 try {
-                    const video = document.getElementById('camera-stream');
-                    // Request Back Camera
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        video: { facingMode: 'environment' } 
-                    });
+                    const constraints = { 
+                        video: { 
+                            facingMode: this.facingMode 
+                        } 
+                    };
+                    const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.videoStream = stream;
+                    const video = document.getElementById('camera-stream');
                     video.srcObject = stream;
-                    document.getElementById('modal-camera').classList.remove('hidden-view');
                 } catch (err) {
                     alert("Gagal membuka kamera. Pastikan izin kamera diberikan.");
                     console.error(err);
+                    this.stopCamera();
                 }
             },
 
@@ -586,39 +600,92 @@
                 }
                 document.getElementById('modal-camera').classList.add('hidden-view');
             },
+            
+            switchCamera: function() {
+                this.facingMode = (this.facingMode === 'environment') ? 'user' : 'environment';
+                this.startCamera(); // Restart with new mode
+            },
 
             takePicture: function() {
                 const video = document.getElementById('camera-stream');
                 const canvas = document.getElementById('camera-canvas');
                 const context = canvas.getContext('2d');
                 
-                // Set canvas dimensions to video dimensions
+                // Match canvas size to video stream size
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 
                 // Draw current frame
+                // If front camera, we might want to mirror it, but let's keep it simple for now as per reference
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
-                // Stop stream
+                // Convert directly to Base64 (JPEG quality 0.5)
+                // This is synchronous and avoids Blob memory issues in WebViews
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                
+                // Stop camera immediately to save battery/resources
                 this.stopCamera();
                 
-                // Convert to Blob for compression/preview
-                canvas.toBlob((blob) => {
-                     this.processImageBlob(blob);
-                }, 'image/jpeg', 0.9);
+                // Set the result
+                this.setPhotoResult(dataUrl);
             },
             
-            switchCamera: async function() {
-                 if (this.videoStream) {
-                    this.videoStream.getTracks().forEach(track => track.stop());
-                 }
-                 // Simple toggle implementation logic implies re-requesting with user facingMode if needed, 
-                 // but typically 'environment' is what we want. 
-                 // For now, let's just restart (future improvement: toggle facingMode var).
-                 this.startCamera();
+            // --- GALLERY LOGIC (Unified with Camera) ---
+            handleImage: function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (file.size > 5 * 1024 * 1024) {
+                    alert("Ukuran foto terlalu besar (Max 5MB).");
+                    e.target.value = ""; 
+                    return;
+                }
+                
+                // Convert file to Base64 using FileReader
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    // Create an image object to potentially resize it (optional but good practice)
+                    const img = new Image();
+                    img.onload = () => {
+                         const canvas = document.createElement('canvas');
+                         const MAX_WIDTH = 640; // Resize for consistency
+                         const scaleSize = MAX_WIDTH / img.width;
+                         canvas.width = MAX_WIDTH;
+                         canvas.height = img.height * scaleSize;
+                         const ctx = canvas.getContext('2d');
+                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                         const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                         
+                         this.setPhotoResult(dataUrl);
+                    }
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            },
+            
+            // --- UNIFIED PHOTO SETTER ---
+            setPhotoResult: function(base64String) {
+                this.currentPhotoBase64 = base64String;
+                document.getElementById('final-photo-base64').value = base64String;
+                
+                const imgPreview = document.getElementById('img-preview');
+                imgPreview.src = base64String;
+                
+                document.getElementById('preview-container').classList.remove('hidden-view');
+                document.getElementById('existing-photo-url').value = ""; // Clear existing URL if any
             },
 
-            // --- AUTOCOMPLETE LOGIC ---
+            clearImage: function() {
+                this.currentPhotoBase64 = "";
+                document.getElementById('final-photo-base64').value = "";
+                document.getElementById('inp-foto-gallery').value = "";
+                document.getElementById('existing-photo-url').value = "";
+                document.getElementById('preview-container').classList.add('hidden-view');
+                document.getElementById('img-preview').src = "";
+            },
+            
+            // --- REST OF APP LOGIC ---
+
             fetchRefs: async function() {
                 try {
                     const res = await fetch(APPS_SCRIPT_URL, {
@@ -665,7 +732,6 @@
                     }
                 });
                 
-                // Hide when clicking outside
                 document.addEventListener('click', (e) => {
                     if(e.target !== input && e.target !== list) {
                         list.classList.add('hidden-view');
@@ -1300,6 +1366,7 @@
                 btnSimpan.disabled = true;
                 lucide.createIcons();
 
+                // USE THE UNIFIED BASE64 VARIABLE
                 let photoData = this.currentPhotoBase64 || document.getElementById('existing-photo-url').value;
                 const data = {
                     id: document.getElementById('inp-id').value, 
@@ -1348,76 +1415,6 @@
                 this.isListening = true;
                 recognition.start();
             },
-
-            handleImage: function(e) {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                if (file.size > 5 * 1024 * 1024) {
-                    alert("Ukuran foto terlalu besar (Max 5MB).");
-                    e.target.value = ""; 
-                    return;
-                }
-                
-                // Show standard processing loading
-                this.processImageBlob(file);
-            },
-            
-            processImageBlob: function(blob) {
-                // FIX: Use ObjectURL for Instant Preview (Crash Prevention)
-                if (this.currentPreviewUrl) URL.revokeObjectURL(this.currentPreviewUrl);
-                const objectUrl = URL.createObjectURL(blob);
-                this.currentPreviewUrl = objectUrl;
-                document.getElementById('img-preview').src = objectUrl;
-                document.getElementById('preview-container').classList.remove('hidden-view');
-                document.getElementById('existing-photo-url').value = ""; 
-
-                // Process Compression in Background (for Saving)
-                document.getElementById('compressing-indicator').classList.remove('hidden-view');
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        // Reduced MAX_WIDTH to 480px for standard reporting and anti-crash
-                        const MAX_WIDTH = 480; 
-                        const scaleSize = MAX_WIDTH / img.width;
-                        canvas.width = MAX_WIDTH;
-                        canvas.height = img.height * scaleSize;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
-                        try {
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
-                            
-                            document.getElementById('compressing-indicator').classList.add('hidden-view');
-                            
-                            this.currentPhotoBase64 = dataUrl;
-                        } catch (err) {
-                            alert("Gagal memproses gambar. Memori browser tidak cukup.");
-                            this.clearImage();
-                        }
-                    };
-                    img.onerror = () => {
-                        alert("Gagal memuat gambar.");
-                        document.getElementById('compressing-indicator').classList.add('hidden-view');
-                    }
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(blob);
-            },
-
-            clearImage: function() {
-                this.currentPhotoBase64 = "";
-                if (this.currentPreviewUrl) {
-                    URL.revokeObjectURL(this.currentPreviewUrl);
-                    this.currentPreviewUrl = "";
-                }
-                document.getElementById('inp-foto-gallery').value = "";
-                document.getElementById('existing-photo-url').value = "";
-                document.getElementById('preview-container').classList.add('hidden-view');
-                document.getElementById('img-preview').src = "";
-            }
         };
         document.addEventListener('DOMContentLoaded', () => app.init());
     </script>
