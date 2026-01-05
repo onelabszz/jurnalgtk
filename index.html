@@ -6,9 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Jurnal Guru Mobile</title>
   
+  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Babel untuk JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
+  <!-- Import Maps untuk Module -->
   <script type="importmap">
     {
       "imports": {
@@ -20,31 +24,34 @@
   </script>
 
   <style>
+    /* Custom Scrollbar Hide */
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Prevent Zoom on Mobile Input */
     input, textarea { font-size: 16px !important; }
     
+    /* Animations */
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     .loader { border: 3px solid #f3f3f3; border-top: 3px solid #3b82f6; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+    
     .voice-wave { animation: pulse-ring 1.5s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
     @keyframes pulse-ring { 0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
 
-    /* CSS KHUSUS UNTUK CETAK / PDF */
+    /* Toast Animation */
+    @keyframes slideDown { from { transform: translateY(-100%) translateX(-50%); opacity: 0; } to { transform: translateY(0) translateX(-50%); opacity: 1; } }
+    .toast-anim { animation: slideDown 0.3s ease-out forwards; }
+
+    /* Print Styles */
     @media print {
-      @page { size: landscape; margin: 1cm; } /* Memaksa Landscape */
+      @page { size: landscape; margin: 1cm; }
       body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: Arial, sans-serif; }
       .no-print { display: none !important; }
       .print-only { display: block !important; width: 100%; }
       .page-break { page-break-inside: avoid; }
-      
-      /* Reset Container Constraints for Print */
       #root > div { max-width: none !important; box-shadow: none !important; margin: 0 !important; }
     }
     .print-only { display: none; }
-    
-    /* Toast Animation */
-    @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-    .toast-anim { animation: slideDown 0.3s ease-out forwards; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased selection:bg-blue-100 selection:text-blue-900">
@@ -62,7 +69,6 @@
       TrendingUp, ListChecks, AlertCircle, CheckCircle, ShieldCheck, ArrowLeft, ExternalLink, Eye, ImagePlus
     } from 'lucide-react';
 
-    // --- KONFIGURASI PENTING ---
     const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec"; 
 
     // --- UTILITIES ---
@@ -90,18 +96,60 @@
     };
 
     const formatDateIndo = (dateStr) => {
-      // Pastikan dateStr valid
       const d = new Date(dateStr);
       if (isNaN(d.getTime())) return dateStr;
       const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
       return d.toLocaleDateString('id-ID', options);
     };
 
-    // --- DATA DEFAULT (OFFLINE FALLBACK) ---
     const DEFAULT_KEGIATAN = ["Melaksanakan KBM di kelas", "Membuat perangkat ajar"];
     const DEFAULT_HASIL = ["Terlaksananya KBM dengan baik", "Tersusunnya RPP/Modul"];
 
-    // --- TOAST COMPONENT ---
+    // --- UI COMPONENTS ---
+    
+    function NavButton({ icon, label, active, onClick }) {
+      return (
+        <button onClick={onClick} className={`flex flex-col items-center justify-center w-full py-1 transition-all duration-300 ${active ? 'text-blue-600' : 'text-gray-400 hover:text-gray-600'}`}>
+          <div className={`transition-transform duration-300 ${active ? '-translate-y-1' : ''}`}>{icon}</div>
+          <span className={`text-[10px] font-medium mt-1 ${active ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>{label}</span>
+        </button>
+      );
+    }
+
+    function ProfileMenuItem({ icon, label }) {
+      return (
+        <button className="w-full flex items-center gap-3 p-4 text-left border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+           <div className="text-gray-400">{icon}</div>
+           <span className="font-medium text-gray-700 text-sm flex-1">{label}</span>
+           <ChevronRight size={16} className="text-gray-300" />
+        </button>
+      );
+    }
+
+    function VoiceInputButton({ onResult }) {
+      const [isListening, setIsListening] = useState(false);
+      const recognitionRef = useRef(null);
+      const startListening = () => {
+        if (!('webkitSpeechRecognition' in window)) { alert("Fitur suara hanya tersedia di Google Chrome."); return; }
+        const recognition = new window.webkitSpeechRecognition();
+        recognition.lang = 'id-ID'; recognition.continuous = false; recognition.interimResults = false;
+        recognition.onstart = () => setIsListening(true);
+        recognition.onend = () => setIsListening(false);
+        recognition.onerror = (event) => { console.error(event.error); setIsListening(false); };
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          onResult(transcript.charAt(0).toUpperCase() + transcript.slice(1));
+        };
+        recognitionRef.current = recognition; recognition.start();
+      };
+      const stopListening = () => { if (recognitionRef.current) recognitionRef.current.stop(); };
+      return (
+        <button type="button" onClick={isListening ? stopListening : startListening} className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white voice-wave' : 'bg-gray-100 text-gray-500 hover:bg-blue-100 hover:text-blue-600'}`}>
+          {isListening ? <X size={16} /> : <Mic size={16} />}
+        </button>
+      );
+    }
+
     function Toast({ message, type, onClose }) {
       useEffect(() => {
         const timer = setTimeout(onClose, 3000);
@@ -112,7 +160,7 @@
       const icon = type === 'success' ? <CheckCircle size={20} /> : type === 'error' ? <AlertCircle size={20} /> : <Bell size={20} />;
 
       return (
-        <div className={`fixed top-4 left-4 right-4 z-[100] md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgClass} toast-anim`}>
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[100] w-auto min-w-[300px] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgClass} toast-anim`}>
            <div>{icon}</div>
            <p className="text-sm font-bold flex-1">{message}</p>
            <button onClick={onClose}><X size={16} className="opacity-70 hover:opacity-100" /></button>
@@ -120,11 +168,12 @@
       );
     }
 
-    // --- APP COMPONENT ---
+    // --- MAIN LOGIC ---
+
     function App() {
       const [view, setView] = useState('login'); 
       const [user, setUser] = useState(null);
-      const [entries, setEntries] = useState([]); // Daftar Jurnal
+      const [entries, setEntries] = useState([]);
       const [editingEntry, setEditingEntry] = useState(null); 
       
       const [suggestionsKegiatan, setSuggestionsKegiatan] = useState(DEFAULT_KEGIATAN);
@@ -134,7 +183,7 @@
       
       const [isLoadingRef, setIsLoadingRef] = useState(false);
       const [isDeleting, setIsDeleting] = useState(false);
-      const [isLoadingJurnal, setIsLoadingJurnal] = useState(false); // New state for loading journals
+      const [isLoadingJurnal, setIsLoadingJurnal] = useState(false);
       
       const [toast, setToast] = useState(null);
 
@@ -148,7 +197,7 @@
           const u = JSON.parse(savedUser);
           setUser(u);
           setView('main'); 
-          fetchUserJurnals(u.nip); // FETCH DATA SAAT RELOAD
+          fetchUserJurnals(u.nip);
         }
         fetchReferenceData();
       }, []);
@@ -177,7 +226,6 @@
         }
       };
 
-      // --- NEW FUNCTION: Fetch Jurnal User ---
       const fetchUserJurnals = async (nip) => {
         setIsLoadingJurnal(true);
         try {
@@ -198,13 +246,12 @@
         localStorage.setItem('jurnal_user', JSON.stringify(u));
         showToast(`Selamat datang, ${u.nama}!`, 'success');
         setView('main'); 
-        fetchUserJurnals(u.nip); // Fetch setelah login
+        fetchUserJurnals(u.nip);
       };
 
       const handleLogout = () => { setUser(null); localStorage.removeItem('jurnal_user'); setEntries([]); setView('login'); showToast('Berhasil keluar', 'info'); };
       
       const handleSaveSuccess = (entryData) => { 
-        // entryData now comes from Server Response (includes correct foto URL)
         if (editingEntry) {
           setEntries(entries.map(e => e.id === entryData.id ? entryData : e));
           showToast('Jurnal berhasil diperbarui', 'success');
@@ -278,7 +325,7 @@
               onLogout={handleLogout}
               defaultRefKegiatan={suggestionsKegiatan}
               defaultRefHasil={suggestionsHasil}
-              defaultKota={kota}
+              defaultKota={defaultKota}
               showToast={showToast}
               onBackToApp={() => setView('main')}
             />
@@ -287,272 +334,6 @@
       );
     }
 
-    // --- OTHER COMPONENTS... VoiceInputButton etc ---
-    function VoiceInputButton({ onResult }) {
-      const [isListening, setIsListening] = useState(false);
-      const recognitionRef = useRef(null);
-      const startListening = () => {
-        if (!('webkitSpeechRecognition' in window)) { alert("Gunakan Google Chrome."); return; }
-        const recognition = new window.webkitSpeechRecognition();
-        recognition.lang = 'id-ID'; recognition.continuous = false; recognition.interimResults = false;
-        recognition.onstart = () => setIsListening(true);
-        recognition.onend = () => setIsListening(false);
-        recognition.onerror = (event) => { console.error(event.error); setIsListening(false); };
-        recognition.onresult = (event) => {
-          const transcript = event.results[0][0].transcript;
-          onResult(transcript.charAt(0).toUpperCase() + transcript.slice(1));
-        };
-        recognitionRef.current = recognition; recognition.start();
-      };
-      const stopListening = () => { if (recognitionRef.current) recognitionRef.current.stop(); };
-      return (
-        <button type="button" onClick={isListening ? stopListening : startListening} className={`p-2 rounded-full transition-all ${isListening ? 'bg-red-500 text-white voice-wave' : 'bg-gray-100 text-gray-500 hover:bg-blue-100 hover:text-blue-600'}`}>
-          {isListening ? <X size={16} /> : <Mic size={16} />}
-        </button>
-      );
-    }
-
-    // --- ADMIN DASHBOARD COMPONENTS (Expanded) ---
-    function AdminDashboard({ user, onLogout, defaultRefKegiatan, defaultRefHasil, defaultKota, showToast, onBackToApp }) {
-      const [activeTab, setActiveTab] = useState('stats');
-      return (
-        <div className="h-full flex flex-col bg-gray-50">
-          <div className="bg-gray-900 text-white px-6 pt-10 pb-6 shadow-sm z-10 sticky top-0">
-             <div className="flex justify-between items-center mb-4">
-                <div className="flex items-center gap-3">
-                   <button onClick={onBackToApp} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 text-white"><ArrowLeft size={18} /></button>
-                   <div><h2 className="text-xl font-bold">Admin Panel</h2><p className="text-xs text-gray-400">{user.nama}</p></div>
-                </div>
-                <button onClick={onLogout} className="bg-red-600 p-2 rounded-lg text-white hover:bg-red-700"><LogOut size={16} /></button>
-             </div>
-             <div className="flex gap-2 overflow-x-auto no-scrollbar">
-               <button onClick={() => setActiveTab('stats')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'stats' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Statistik</button>
-               <button onClick={() => setActiveTab('monitor')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'monitor' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Monitor</button>
-               <button onClick={() => setActiveTab('users')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Guru</button>
-               <button onClick={() => setActiveTab('refs')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'refs' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Referensi</button>
-             </div>
-          </div>
-          <div className="flex-1 overflow-y-auto p-4 pb-20">
-             {activeTab === 'stats' && <AdminStats />}
-             {activeTab === 'monitor' && <AdminMonitor />}
-             {activeTab === 'users' && <AdminUsers showToast={showToast} />}
-             {activeTab === 'refs' && <AdminRefs defaultKegiatan={defaultRefKegiatan} defaultRefHasil={defaultRefHasil} defaultKota={defaultKota} showToast={showToast} />}
-          </div>
-        </div>
-      );
-    }
-
-    function AdminMonitor() {
-      const [jurnals, setJurnals] = useState([]);
-      const [loading, setLoading] = useState(false);
-      const [filter, setFilter] = useState("");
-      
-      useEffect(() => { loadJurnals(); }, []);
-      
-      const loadJurnals = async () => {
-        setLoading(true);
-        try {
-          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_all_jurnals' }) });
-          const json = await res.json();
-          if (json.success) setJurnals(json.jurnals);
-        } catch (e) { console.error(e); } finally { setLoading(false); }
-      };
-      
-      const filtered = jurnals.filter(j => j.nama.toLowerCase().includes(filter.toLowerCase()) || j.kegiatan.toLowerCase().includes(filter.toLowerCase()));
-      
-      return (
-        <div className="space-y-4">
-           <h3 className="font-bold text-gray-700 flex items-center gap-2"><Eye size={18} /> Monitor Jurnal Terbaru</h3>
-           <input className="w-full border p-2 rounded text-sm mb-2" placeholder="Cari nama guru atau kegiatan..." value={filter} onChange={e=>setFilter(e.target.value)} />
-           {loading ? <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/> Loading data...</div> : (
-              <div className="space-y-3">
-                 {filtered.length === 0 ? <p className="text-gray-400 text-sm text-center">Tidak ada data.</p> : filtered.map((j, i) => (
-                   <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                      <div className="flex justify-between items-start mb-1">
-                        <span className="font-bold text-sm text-blue-600">{j.nama}</span>
-                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{j.waktu ? new Date(j.waktu).toLocaleDateString('id-ID') : '-'}</span>
-                      </div>
-                      <p className="text-sm text-gray-800 font-medium mb-1">{j.kegiatan}</p>
-                      <p className="text-xs text-gray-500">{j.hasil}</p>
-                   </div>
-                 ))}
-              </div>
-           )}
-        </div>
-      );
-    }
-    
-    function AdminStats() { 
-      const [stats, setStats] = useState([]); 
-      const [loading, setLoading] = useState(false); 
-      useEffect(() => { loadStats(); }, []); 
-      const loadStats = async () => { 
-        setLoading(true); 
-        try { 
-          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_stats' }) }); 
-          const json = await res.json(); 
-          if (json.success) setStats(json.stats); 
-        } catch (e) { console.error(e); } finally { setLoading(false); } 
-      }; 
-      return ( 
-        <div className="space-y-4"> 
-          <h3 className="font-bold text-gray-700 flex items-center gap-2"><TrendingUp size={18} /> Keaktifan Guru (Total Jurnal)</h3> 
-          {loading ? <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/> Loading...</div> : ( 
-            <div className="space-y-3"> 
-              {stats.length === 0 ? <p className="text-gray-400 text-sm italic">Belum ada data jurnal.</p> : stats.map((item, idx) => ( 
-                <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3"> 
-                  <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">{idx+1}</div> 
-                  <div className="flex-1"> 
-                    <p className="text-sm font-bold text-gray-800">{item.name}</p> 
-                    <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1"> 
-                      <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (item.count/stats[0].count)*100)}%` }}></div> 
-                    </div> 
-                  </div> 
-                  <span className="text-lg font-bold text-blue-600">{item.count}</span> 
-                </div> 
-              ))} 
-            </div> 
-          )} 
-        </div> 
-      ); 
-    }
-
-    function AdminUsers({ showToast }) { 
-      const [users, setUsers] = useState([]); 
-      const [loading, setLoading] = useState(false); 
-      const [showForm, setShowForm] = useState(false); 
-      const [formData, setFormData] = useState({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); 
-      const [isEditing, setIsEditing] = useState(false); 
-      useEffect(() => { loadUsers(); }, []); 
-      const loadUsers = async () => { 
-        setLoading(true); 
-        try { 
-          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_users' }) }); 
-          const json = await res.json(); 
-          if (json.success) setUsers(json.users); 
-        } catch(e) { console.error(e); } finally { setLoading(false); } 
-      }; 
-      const handleEdit = (u) => { setFormData(u); setIsEditing(true); setShowForm(true); }; 
-      const handleAdd = () => { setFormData({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); setIsEditing(false); setShowForm(true); }; 
-      const handleSave = async () => { 
-        if (!formData.nip || !formData.nama || !formData.pin) return showToast("Mohon lengkapi data", 'error'); 
-        setLoading(true); 
-        try { 
-          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_user', user: formData }) }); 
-          const json = await res.json(); 
-          if (json.success) { setShowForm(false); loadUsers(); showToast("Data guru disimpan", 'success'); } else { showToast(json.message, 'error'); } 
-        } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); } 
-      }; 
-      const handleDelete = async (nip) => { 
-        if (!confirm("Hapus guru ini?")) return; 
-        setLoading(true); 
-        try { 
-          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_delete_user', nip }) }); 
-          const json = await res.json(); 
-          if (json.success) { loadUsers(); showToast("Guru dihapus", 'success'); } else showToast(json.message, 'error'); 
-        } catch(e) { showToast("Gagal menghapus", 'error'); } finally { setLoading(false); } 
-      }; 
-      return ( 
-        <div className="space-y-4"> 
-          <div className="flex justify-between items-center"> 
-            <h3 className="font-bold text-gray-700 flex items-center gap-2"><Users size={18} /> Daftar Guru</h3> 
-            <button onClick={handleAdd} className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><Plus size={14} /> Tambah</button> 
-          </div> 
-          {showForm && ( 
-            <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-lg mb-4 animate-in slide-in-from-top-2"> 
-              <h4 className="font-bold mb-3 text-sm">{isEditing ? 'Edit Guru' : 'Tambah Guru Baru'}</h4> 
-              <div className="grid gap-3"> 
-                <input className="border p-2 rounded text-sm" placeholder="NIP (Nomor Induk)" value={formData.nip} onChange={e=>setFormData({...formData, nip: e.target.value})} disabled={isEditing} /> 
-                <input className="border p-2 rounded text-sm" placeholder="Nama Lengkap" value={formData.nama} onChange={e=>setFormData({...formData, nama: e.target.value})} /> 
-                <input className="border p-2 rounded text-sm" placeholder="PIN Login" value={formData.pin} onChange={e=>setFormData({...formData, pin: e.target.value})} /> 
-                <select className="border p-2 rounded text-sm" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})}> <option>Guru Mapel</option><option>Wali Kelas</option><option>Kepala Sekolah</option><option>Admin</option> </select> 
-                <input className="border p-2 rounded text-sm" placeholder="Nama Sekolah" value={formData.sekolah} onChange={e=>setFormData({...formData, sekolah: e.target.value})} /> 
-                <div className="flex gap-2 mt-2"> <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold flex-1">{loading ? '...' : 'Simpan'}</button> <button onClick={()=>setShowForm(false)} className="bg-gray-200 text-gray-600 px-4 py-2 rounded text-sm font-bold">Batal</button> </div> 
-              </div> 
-            </div> 
-          )} 
-          <div className="space-y-2"> 
-            {users.map((u, i) => ( 
-              <div key={i} className="bg-white p-3 rounded-lg border border-gray-100 flex justify-between items-center shadow-sm"> 
-                <div> 
-                  <p className="font-bold text-sm text-gray-800">{u.nama}</p> 
-                  <p className="text-xs text-gray-500">{u.nip} • {u.role}</p> 
-                  <p className="text-[10px] bg-gray-100 inline-block px-1 rounded text-gray-500 mt-1">PIN: {u.pin}</p> 
-                </div> 
-                <div className="flex gap-2"> 
-                  <button onClick={()=>handleEdit(u)} className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Pencil size={14}/></button> 
-                  <button onClick={()=>handleDelete(u.nip)} className="p-2 bg-red-50 text-red-600 rounded-lg"><Trash2 size={14}/></button> 
-                </div> 
-              </div> 
-            ))} 
-          </div> 
-        </div> 
-      ); 
-    }
-
-    function AdminRefs({ defaultKegiatan, defaultRefHasil, defaultKota, showToast }) { 
-      const [kegiatan, setKegiatan] = useState(defaultKegiatan); 
-      const [hasil, setHasil] = useState(defaultRefHasil); 
-      const [kota, setKota] = useState(defaultKota); 
-      const [tempItem, setTempItem] = useState(""); 
-      const [activeSection, setActiveSection] = useState('kegiatan'); 
-      const [loading, setLoading] = useState(false); 
-      const handleAdd = () => { if (!tempItem) return; if (activeSection === 'kegiatan') setKegiatan([...kegiatan, tempItem]); else setHasil([...hasil, tempItem]); setTempItem(""); }; 
-      const handleDelete = (idx) => { if (activeSection === 'kegiatan') setKegiatan(kegiatan.filter((_, i) => i !== idx)); else setHasil(hasil.filter((_, i) => i !== idx)); }; 
-      const handleSave = async () => { setLoading(true); try { await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'kegiatan', items: kegiatan }) }); await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'hasil', items: hasil }) }); await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_city', kota: kota }) }); showToast("Pengaturan berhasil disimpan!", 'success'); } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); } }; 
-      return ( 
-        <div className="space-y-6"> 
-          <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm"> 
-            <h4 className="font-bold text-gray-800 text-sm mb-2">Pengaturan Umum</h4> 
-            <label className="text-xs text-gray-500 block mb-1">Nama Kota (untuk Laporan)</label> 
-            <input className="w-full border p-2 rounded text-sm" value={kota} onChange={e=>setKota(e.target.value)} /> 
-          </div> 
-          <div> 
-            <h4 className="font-bold text-gray-800 text-sm mb-3">Editor Referensi Otomatis</h4> 
-            <div className="flex gap-2 mb-4"> 
-              <button onClick={()=>setActiveSection('kegiatan')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'kegiatan' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-gray-200 text-gray-500'}`}>Daftar Kegiatan</button> 
-              <button onClick={()=>setActiveSection('hasil')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'hasil' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-500'}`}>Daftar Hasil</button> 
-            </div> 
-            <div className="flex gap-2 mb-2"> <input className="flex-1 border p-2 rounded text-sm" placeholder="Tambah item baru..." value={tempItem} onChange={e=>setTempItem(e.target.value)} /> <button onClick={handleAdd} className="bg-gray-800 text-white px-3 rounded"><Plus size={16} /></button> </div> 
-            <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm max-h-60 overflow-y-auto"> 
-              {(activeSection === 'kegiatan' ? kegiatan : hasil).map((item, i) => ( 
-                <div key={i} className="p-3 border-b border-gray-50 flex justify-between items-center text-sm text-gray-700"> <span>{item}</span> <button onClick={()=>handleDelete(i)} className="text-red-400 hover:text-red-600"><X size={14}/></button> </div> 
-              ))} 
-            </div> 
-          </div> 
-          <button onClick={handleSave} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-gray-400"> {loading ? 'Menyimpan...' : 'Simpan Semua Perubahan'} </button> 
-        </div> 
-      ); 
-    }
-
-    function CalendarView({ entries, onSelectDate, selectedDate }) { 
-      const [currentMonth, setCurrentMonth] = useState(new Date()); 
-      const getDaysInMonth = (date) => { const year = date.getFullYear(); const month = date.getMonth(); const days = new Date(year, month + 1, 0).getDate(); const firstDay = new Date(year, month, 1).getDay(); return { days, firstDay }; }; 
-      const { days, firstDay } = getDaysInMonth(currentMonth); 
-      const daysArray = [...Array(days).keys()].map(i => i + 1); 
-      const emptyDays = Array(firstDay).fill(null); 
-      // UPDATE: Gunakan 'tanggal' (YYYY-MM-DD) sebagai acuan kalender, bukan ID
-      const hasEntry = (day) => { const checkDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString(); return entries.some(e => { if(!e.tanggal) return false; return new Date(e.tanggal).toDateString() === checkDate; }); };
-      const isSelected = (day) => { if (!selectedDate) return false; const checkDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day); return selectedDate.toDateString() === checkDate.toDateString(); }; 
-      const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)); 
-      const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)); 
-      return ( 
-        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4"> 
-          <div className="flex justify-between items-center mb-4"> 
-            <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-full"><ChevronLeft size={20}/></button> 
-            <h3 className="font-bold text-gray-800">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3> 
-            <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-full"><ChevronRight size={20}/></button> 
-          </div> 
-          <div className="grid grid-cols-7 gap-1 text-center mb-2"> {['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((d, i) => <div key={i} className="text-xs font-bold text-gray-400">{d}</div>)} </div> 
-          <div className="grid grid-cols-7 gap-1"> 
-            {emptyDays.map((_, i) => <div key={`empty-${i}`}></div>)} 
-            {daysArray.map(day => ( <button key={day} onClick={() => onSelectDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day))} className={`h-9 w-9 rounded-full flex flex-col items-center justify-center text-sm relative transition-all ${isSelected(day) ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-100 text-gray-700'}`} > <span>{day}</span> {hasEntry(day) && ( <span className={`w-1.5 h-1.5 rounded-full absolute bottom-1 transition-colors ${isSelected(day) ? 'bg-white' : 'bg-green-500'}`}></span> )} </button> ))} 
-          </div> 
-        </div> 
-      ); 
-    }
-
-    // --- SCREEN 1: LOGIN (Expanded) ---
     function LoginScreen({ onLogin, showToast }) { 
       const [pin, setPin] = useState(''); 
       const [isLoading, setIsLoading] = useState(false); 
@@ -584,7 +365,6 @@
       ); 
     }
 
-    // --- SCREEN 2: MAIN LAYOUT ---
     function MainScreen({ user, entries, onLogout, onAdd, onEdit, onDelete, isDeleting, showToast, onOpenAdmin, principalInfo, kota, isLoadingJurnal }) {
       const [activeTab, setActiveTab] = useState('home');
 
@@ -617,16 +397,13 @@
       );
     }
 
-    // --- TABS COMPONENTS ---
     function HomeTab({ user, entries, onEdit, onDelete, isLoadingJurnal }) {
       const [viewMode, setViewMode] = useState('list'); 
       const [selectedDate, setSelectedDate] = useState(new Date());
 
-      // Filter entries based on view mode (Menggunakan field 'tanggal')
       const displayEntries = viewMode === 'list' 
         ? entries.filter(e => {
             if(!e.tanggal) return false;
-            // Gunakan tanggal hari ini sebagai default
             return new Date(e.tanggal).toDateString() === new Date().toDateString();
           }) 
         : entries.filter(e => {
@@ -686,7 +463,6 @@
                       <div className="bg-gray-50 p-2 rounded-lg flex gap-2">
                           <p className="text-xs text-gray-500 line-clamp-2 flex-1">{entry.hasil}</p>
                       </div>
-                      {/* IKON FOTO DI LIST */}
                       {entry.foto && (
                         <div className="mt-2 inline-flex items-center gap-1 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded border border-blue-200 font-medium">
                           <ImagePlus size={12} /> Foto Ada
@@ -705,11 +481,107 @@
       );
     }
 
-    // --- FORM SCREEN (Updated: Date Picker) ---
-    function FormScreen({ user, onCancel, onSuccess, suggestionsKegiatan, suggestionsHasil, isLoadingRef, initialData, showToast }) {
-      // Input Date State
-      const [tanggal, setTanggal] = useState(initialData && initialData.tanggal ? initialData.tanggal : new Date().toISOString().split('T')[0]);
+    function RekapTab({ user, entries }) {
+      const handlePrint = () => { window.print(); };
       
+      const handleExportExcel = () => {
+        if (entries.length === 0) return alert("Tidak ada data untuk diexport");
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Tanggal,Jam Mulai,Jam Selesai,NIP,Nama,Kegiatan,Hasil,Link Foto\n";
+        entries.forEach(e => {
+          const date = new Date(e.tanggal || parseInt(e.id)).toLocaleDateString('id-ID');
+          const kegiatan = `"${e.kegiatan.replace(/"/g, '""')}"`;
+          const hasil = `"${e.hasil.replace(/"/g, '""')}"`;
+          const foto = `"${e.foto || ''}"`;
+          csvContent += `${date},${e.jamMulai || ''},${e.jamSelesai || ''},'${user.nip},${user.nama},${kegiatan},${hasil},${foto}\n`;
+        });
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Jurnal_Guru_${user.nama}_${new Date().getMonth()+1}_${new Date().getFullYear()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      };
+
+      return (
+        <div className="p-6 pt-10 space-y-6">
+          <div className="flex flex-col gap-2">
+             <h2 className="text-2xl font-bold text-gray-800">Rekapitulasi</h2>
+             <div className="flex gap-2">
+               <button onClick={handlePrint} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors">
+                 <Printer size={16} /> Cetak Rekap (PDF)
+               </button>
+               <button onClick={handleExportExcel} className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors">
+                 <FileSpreadsheet size={16} /> Excel / CSV
+               </button>
+             </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-blue-600 text-white p-4 rounded-2xl shadow-lg shadow-blue-600/20 relative overflow-hidden">
+               <div className="relative z-10">
+                 <p className="text-blue-100 text-xs font-medium mb-1">Total Jurnal</p>
+                 <p className="text-3xl font-bold">{entries.length}</p>
+                 <p className="text-[10px] text-blue-200 mt-1">Total tersimpan</p>
+               </div>
+               <FileText className="absolute bottom-[-10px] right-[-10px] w-20 h-20 text-white/10" />
+            </div>
+            <div className="bg-white text-gray-800 p-4 rounded-2xl shadow-sm border border-gray-100">
+               <p className="text-gray-400 text-xs font-medium mb-1">Kinerja</p>
+               <p className="text-3xl font-bold text-gray-800">100%</p>
+               <p className="text-[10px] text-green-600 mt-1 flex items-center gap-1"><span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span> Active</p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    function ProfileTab({ user, onLogout, onOpenAdmin }) {
+      const isPrivileged = user.role === 'Kepala Sekolah' || user.role === 'Admin';
+      return (
+        <div className="bg-gray-50 h-full">
+           <div className="bg-white pb-6 pt-10 rounded-b-3xl shadow-sm px-6 text-center border-b border-gray-100">
+              <div className="w-24 h-24 bg-gradient-to-tr from-blue-500 to-cyan-400 rounded-full mx-auto p-1 shadow-xl mb-4">
+                 <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-4xl font-bold text-blue-600 border-4 border-white">{user.nama.charAt(0)}</div>
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">{user.nama}</h2>
+              <p className="text-sm text-gray-500 mb-1">{user.nip}</p>
+              <div className="inline-block bg-blue-50 text-blue-600 text-xs px-3 py-1 rounded-full font-medium mt-1">{user.role} • {user.sekolah}</div>
+           </div>
+           <div className="p-6 space-y-4">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2">Pengaturan Akun</p>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                 <ProfileMenuItem icon={<User size={18} />} label="Data Pribadi" />
+                 <ProfileMenuItem icon={<Settings size={18} />} label="Ganti PIN" />
+              </div>
+              
+              {isPrivileged && (
+                <>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2 mt-6">Khusus Admin</p>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                     <button onClick={onOpenAdmin} className="w-full flex items-center gap-3 p-4 text-left border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                        <div className="text-gray-400"><ShieldCheck size={18} /></div>
+                        <span className="font-medium text-gray-700 text-sm flex-1">Panel Admin / Kepala Sekolah</span>
+                        <ChevronRight size={16} className="text-gray-300" />
+                     </button>
+                  </div>
+                </>
+              )}
+
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2 mt-6">Lainnya</p>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                 <button onClick={onLogout} className="w-full flex items-center gap-3 p-4 text-left hover:bg-red-50 transition-colors group">
+                    <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center group-hover:bg-red-200"><LogOut size={16} /></div>
+                    <span className="font-medium text-red-600 text-sm flex-1">Keluar Aplikasi</span>
+                 </button>
+              </div>
+           </div>
+        </div>
+      );
+    }
+
+    function FormScreen({ user, onCancel, onSuccess, suggestionsKegiatan, suggestionsHasil, isLoadingRef, initialData, showToast }) {
+      const [tanggal, setTanggal] = useState(initialData && initialData.tanggal ? initialData.tanggal : new Date().toISOString().split('T')[0]);
       const [kegiatan, setKegiatan] = useState(initialData ? initialData.kegiatan : '');
       const [hasil, setHasil] = useState(initialData ? initialData.hasil : '');
       const [showDetail, setShowDetail] = useState(!!initialData); 
@@ -723,7 +595,6 @@
       const fileInputRef = useRef(null);
 
       const handleSuggestion = (setter, val) => setter(val);
-
       const filteredKegiatan = suggestionsKegiatan.filter(s => s.toLowerCase().includes(kegiatan.toLowerCase()));
       const filteredHasil = suggestionsHasil.filter(s => s.toLowerCase().includes(hasil.toLowerCase()));
 
@@ -733,31 +604,25 @@
           try {
             const compressedBase64 = await compressImage(file);
             setFotoPreview(compressedBase64);
-          } catch (err) { showToast("Gagal memproses gambar", 'error'); console.error(err); }
+          } catch (err) { showToast("Gagal memproses gambar", 'error'); }
         }
       };
 
       const handleSubmit = async () => {
         if (!kegiatan || !hasil) { showToast("Mohon isi Kegiatan dan Hasil Kegiatan.", 'error'); return; }
         setIsSubmitting(true);
-        
-        // Include 'tanggal' in payload
         const dataJurnal = {
           id: initialData ? initialData.id : Date.now().toString(), 
-          tanggal: tanggal, // KIRIM TANGGAL KE SERVER
+          tanggal: tanggal,
           nip: user.nip, nama: user.nama, kegiatan, hasil, 
           jamMulai: showDetail ? jamMulai : null, jamSelesai: showDetail ? jamSelesai : null, 
           fotoBase64: (fotoPreview && fotoPreview.startsWith('data:')) ? fotoPreview : null,
           fotoLama: fotoLamaRef.current, action: initialData ? 'edit' : 'create'
         };
-        
         try {
           const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(dataJurnal) });
           const result = await response.json();
-          if (result.success) { 
-             // Gunakan data balikan dari server (yang berisi URL foto asli)
-             onSuccess(result.data); 
-          } else { showToast("Gagal: " + result.message, 'error'); }
+          if (result.success) { onSuccess(result.data); } else { showToast("Gagal: " + result.message, 'error'); }
         } catch (err) { showToast("Gagal koneksi ke server.", 'error'); } finally { setIsSubmitting(false); }
       };
 
@@ -769,7 +634,6 @@
                <p className="font-bold text-gray-800">{initialData ? 'Mengupdate...' : 'Menyimpan...'}</p>
             </div>
           )}
-
           <div className="px-4 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-20 sticky top-0">
             <button onClick={onCancel} disabled={isSubmitting} className="text-sm font-medium text-gray-500 px-2 py-1 hover:bg-gray-100 rounded">Batal</button>
             <span className="font-bold text-gray-800">{initialData ? 'Edit Jurnal' : 'Tulis Jurnal'}</span>
@@ -777,61 +641,47 @@
               {initialData ? 'Update' : 'Simpan'}
             </button>
           </div>
-
           <div className="flex-1 overflow-y-auto p-5 pb-32">
             <div className="space-y-6">
-              
-              {/* TANGGAL PICKER */}
               <div className="bg-blue-50 p-4 rounded-xl border border-blue-100">
                 <label className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-2 block">Tanggal Kegiatan</label>
                 <input type="date" value={tanggal} onChange={e => setTanggal(e.target.value)} className="w-full bg-white p-3 rounded-lg border border-blue-200 font-medium text-gray-700" />
               </div>
-
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
-                     Kegiatan <span className="text-red-500">*</span>
-                     {isLoadingRef && <span className="text-xs font-normal text-gray-400 ml-2 italic">(Memuat...)</span>}
-                  </label>
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1">Kegiatan <span className="text-red-500">*</span></label>
                   <VoiceInputButton onResult={(text) => setKegiatan(prev => prev ? prev + " " + text : text)} />
                 </div>
                 <textarea value={kegiatan} onChange={(e) => setKegiatan(e.target.value)} disabled={isSubmitting} placeholder="Apa yang Anda lakukan hari ini?" className="w-full p-4 bg-gray-50 border-0 rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:bg-white transition-all resize-none text-base" rows={3}></textarea>
-                
                 {filteredKegiatan.length > 0 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar animate-in fade-in slide-in-from-top-1">
+                  <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                     {filteredKegiatan.map((s, i) => (
-                      <button key={i} onClick={() => handleSuggestion(setKegiatan, s)} className="whitespace-nowrap px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-full shadow-sm hover:border-blue-300 hover:text-blue-600 active:bg-blue-50 transition-all">{s.length > 30 ? s.substring(0, 30)+'...' : s}</button>
+                      <button key={i} onClick={() => handleSuggestion(setKegiatan, s)} className="whitespace-nowrap px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-full shadow-sm hover:border-blue-300 hover:text-blue-600">{s.length > 30 ? s.substring(0, 30)+'...' : s}</button>
                     ))}
                   </div>
                 )}
               </div>
-              
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1">
-                     Hasil / Output <span className="text-red-500">*</span>
-                  </label>
+                  <label className="text-sm font-bold text-gray-700 flex items-center gap-1">Hasil / Output <span className="text-red-500">*</span></label>
                   <VoiceInputButton onResult={(text) => setHasil(prev => prev ? prev + " " + text : text)} />
                 </div>
                 <textarea value={hasil} onChange={(e) => setHasil(e.target.value)} disabled={isSubmitting} placeholder="Bagaimana hasilnya?" className="w-full p-4 bg-gray-50 border-0 rounded-2xl text-gray-800 placeholder-gray-400 focus:ring-2 focus:ring-green-500/50 focus:bg-white transition-all resize-none text-base" rows={2}></textarea>
-                 
                  {filteredHasil.length > 0 && (
-                   <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar animate-in fade-in slide-in-from-top-1">
+                   <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
                     {filteredHasil.map((s, i) => (
-                      <button key={i} onClick={() => handleSuggestion(setHasil, s)} className="whitespace-nowrap px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-full shadow-sm hover:border-green-300 hover:text-green-600 active:bg-green-50 transition-all">{s.length > 30 ? s.substring(0, 30)+'...' : s}</button>
+                      <button key={i} onClick={() => handleSuggestion(setHasil, s)} className="whitespace-nowrap px-3 py-1.5 bg-white border border-gray-200 text-gray-600 text-xs rounded-full shadow-sm hover:border-green-300 hover:text-green-600">{s.length > 30 ? s.substring(0, 30)+'...' : s}</button>
                     ))}
                   </div>
                  )}
               </div>
             </div>
-
             <div className="py-6 flex items-center justify-center">
               <button onClick={() => setShowDetail(!showDetail)} className="group flex flex-col items-center gap-1 text-gray-400 hover:text-blue-500 transition-colors">
                 <span className="text-xs font-medium uppercase tracking-wider">{showDetail ? 'Sembunyikan' : 'Lengkapi Detail'}</span>
                 {showDetail ? <ChevronUp size={20} /> : <ChevronDown size={20} className="animate-bounce" />}
               </button>
             </div>
-
             {showDetail && (
               <div className="space-y-6 animate-in fade-in slide-in-from-top-4 duration-500 bg-white rounded-xl">
                 <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-xl border border-gray-100">
@@ -847,7 +697,6 @@
                               <span className="text-xs font-bold">Kamera</span>
                           </button>
                           <input type="file" className="hidden" accept="image/*" capture="environment" ref={cameraInputRef} onChange={handleFileChange} />
-                          
                           <button onClick={() => fileInputRef.current.click()} className="flex flex-col items-center justify-center h-32 border-2 border-gray-200 border-dashed bg-gray-50 rounded-2xl text-gray-500 hover:bg-gray-100 transition-all">
                               <div className="bg-gray-200 p-3 rounded-full mb-2"><Image size={24} /></div>
                               <span className="text-xs font-medium">Galeri</span>
@@ -872,8 +721,112 @@
         </div>
       );
     }
+
+    function AdminDashboard({ user, onLogout, defaultRefKegiatan, defaultRefHasil, defaultKota, showToast, onBackToApp }) {
+      const [activeTab, setActiveTab] = useState('stats');
+      return (
+        <div className="h-full flex flex-col bg-gray-50">
+          <div className="bg-gray-900 text-white px-6 pt-10 pb-6 shadow-sm z-10 sticky top-0">
+             <div className="flex justify-between items-center mb-4">
+                <div className="flex items-center gap-3">
+                   <button onClick={onBackToApp} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 text-white"><ArrowLeft size={18} /></button>
+                   <div><h2 className="text-xl font-bold">Admin Panel</h2><p className="text-xs text-gray-400">{user.nama}</p></div>
+                </div>
+                <button onClick={onLogout} className="bg-red-600 p-2 rounded-lg text-white hover:bg-red-700"><LogOut size={16} /></button>
+             </div>
+             <div className="flex gap-2 overflow-x-auto no-scrollbar">
+               <button onClick={() => setActiveTab('stats')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'stats' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Statistik</button>
+               <button onClick={() => setActiveTab('monitor')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'monitor' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Monitor</button>
+               <button onClick={() => setActiveTab('users')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Guru</button>
+               <button onClick={() => setActiveTab('refs')} className={`flex-1 py-2 px-3 whitespace-nowrap text-xs font-bold rounded-lg ${activeTab === 'refs' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Referensi</button>
+             </div>
+          </div>
+          <div className="flex-1 overflow-y-auto p-4 pb-20">
+             {activeTab === 'stats' && <AdminStats />}
+             {activeTab === 'monitor' && <AdminMonitor />}
+             {activeTab === 'users' && <AdminUsers showToast={showToast} />}
+             {activeTab === 'refs' && <AdminRefs defaultKegiatan={defaultRefKegiatan} defaultRefHasil={defaultRefHasil} defaultKota={defaultKota} showToast={showToast} />}
+          </div>
+        </div>
+      );
+    }
     
-    // ... PrintableReport & createRoot ...
+    function AdminMonitor() {
+      const [jurnals, setJurnals] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [filter, setFilter] = useState("");
+      useEffect(() => { loadJurnals(); }, []);
+      const loadJurnals = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_all_jurnals' }) });
+          const json = await res.json();
+          if (json.success) setJurnals(json.jurnals);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+      };
+      const filtered = jurnals.filter(j => j.nama.toLowerCase().includes(filter.toLowerCase()) || j.kegiatan.toLowerCase().includes(filter.toLowerCase()));
+      return (
+        <div className="space-y-4">
+           <h3 className="font-bold text-gray-700 flex items-center gap-2"><Eye size={18} /> Monitor Jurnal Terbaru</h3>
+           <input className="w-full border p-2 rounded text-sm mb-2" placeholder="Cari nama guru atau kegiatan..." value={filter} onChange={e=>setFilter(e.target.value)} />
+           {loading ? <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/> Loading data...</div> : (
+              <div className="space-y-3">
+                 {filtered.length === 0 ? <p className="text-gray-400 text-sm text-center">Tidak ada data.</p> : filtered.map((j, i) => (
+                   <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="font-bold text-sm text-blue-600">{j.nama}</span>
+                        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{j.waktu ? new Date(j.waktu).toLocaleDateString('id-ID') : '-'}</span>
+                      </div>
+                      <p className="text-sm text-gray-800 font-medium mb-1">{j.kegiatan}</p>
+                      <p className="text-xs text-gray-500">{j.hasil}</p>
+                   </div>
+                 ))}
+              </div>
+           )}
+        </div>
+      );
+    }
+    
+    function AdminStats() { 
+      const [stats, setStats] = useState([]); const [loading, setLoading] = useState(false); 
+      useEffect(() => { loadStats(); }, []); 
+      const loadStats = async () => { 
+        setLoading(true); try { const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_stats' }) }); const json = await res.json(); if (json.success) setStats(json.stats); } catch (e) { console.error(e); } finally { setLoading(false); } 
+      }; 
+      return ( <div className="space-y-4"> <h3 className="font-bold text-gray-700 flex items-center gap-2"><TrendingUp size={18} /> Keaktifan Guru (Total Jurnal)</h3> {loading ? <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/> Loading...</div> : ( <div className="space-y-3"> {stats.length === 0 ? <p className="text-gray-400 text-sm italic">Belum ada data jurnal.</p> : stats.map((item, idx) => ( <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3"> <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">{idx+1}</div> <div className="flex-1"> <p className="text-sm font-bold text-gray-800">{item.name}</p> <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1"> <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (item.count/stats[0].count)*100)}%` }}></div> </div> </div> <span className="text-lg font-bold text-blue-600">{item.count}</span> </div> ))} </div> )} </div> ); 
+    }
+    function AdminUsers({ showToast }) { 
+      const [users, setUsers] = useState([]); const [loading, setLoading] = useState(false); const [showForm, setShowForm] = useState(false); const [formData, setFormData] = useState({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); const [isEditing, setIsEditing] = useState(false); 
+      useEffect(() => { loadUsers(); }, []); 
+      const loadUsers = async () => { setLoading(true); try { const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_users' }) }); const json = await res.json(); if (json.success) setUsers(json.users); } catch(e) { console.error(e); } finally { setLoading(false); } }; 
+      const handleEdit = (u) => { setFormData(u); setIsEditing(true); setShowForm(true); }; 
+      const handleAdd = () => { setFormData({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); setIsEditing(false); setShowForm(true); }; 
+      const handleSave = async () => { if (!formData.nip || !formData.nama || !formData.pin) return showToast("Mohon lengkapi data", 'error'); setLoading(true); try { const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_user', user: formData }) }); const json = await res.json(); if (json.success) { setShowForm(false); loadUsers(); showToast("Data guru disimpan", 'success'); } else { showToast(json.message, 'error'); } } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); } }; 
+      const handleDelete = async (nip) => { if (!confirm("Hapus guru ini?")) return; setLoading(true); try { const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_delete_user', nip }) }); const json = await res.json(); if (json.success) { loadUsers(); showToast("Guru dihapus", 'success'); } else showToast(json.message, 'error'); } catch(e) { showToast("Gagal menghapus", 'error'); } finally { setLoading(false); } }; 
+      return ( <div className="space-y-4"> <div className="flex justify-between items-center"> <h3 className="font-bold text-gray-700 flex items-center gap-2"><Users size={18} /> Daftar Guru</h3> <button onClick={handleAdd} className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><Plus size={14} /> Tambah</button> </div> {showForm && ( <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-lg mb-4 animate-in slide-in-from-top-2"> <h4 className="font-bold mb-3 text-sm">{isEditing ? 'Edit Guru' : 'Tambah Guru Baru'}</h4> <div className="grid gap-3"> <input className="border p-2 rounded text-sm" placeholder="NIP (Nomor Induk)" value={formData.nip} onChange={e=>setFormData({...formData, nip: e.target.value})} disabled={isEditing} /> <input className="border p-2 rounded text-sm" placeholder="Nama Lengkap" value={formData.nama} onChange={e=>setFormData({...formData, nama: e.target.value})} /> <input className="border p-2 rounded text-sm" placeholder="PIN Login" value={formData.pin} onChange={e=>setFormData({...formData, pin: e.target.value})} /> <select className="border p-2 rounded text-sm" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})}> <option>Guru Mapel</option><option>Wali Kelas</option><option>Kepala Sekolah</option><option>Admin</option> </select> <input className="border p-2 rounded text-sm" placeholder="Nama Sekolah" value={formData.sekolah} onChange={e=>setFormData({...formData, sekolah: e.target.value})} /> <div className="flex gap-2 mt-2"> <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold flex-1">{loading ? '...' : 'Simpan'}</button> <button onClick={()=>setShowForm(false)} className="bg-gray-200 text-gray-600 px-4 py-2 rounded text-sm font-bold">Batal</button> </div> </div> </div> )} <div className="space-y-2"> {users.map((u, i) => ( <div key={i} className="bg-white p-3 rounded-lg border border-gray-100 flex justify-between items-center shadow-sm"> <div> <p className="font-bold text-sm text-gray-800">{u.nama}</p> <p className="text-xs text-gray-500">{u.nip} • {u.role}</p> <p className="text-[10px] bg-gray-100 inline-block px-1 rounded text-gray-500 mt-1">PIN: {u.pin}</p> </div> <div className="flex gap-2"> <button onClick={()=>handleEdit(u)} className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Pencil size={14}/></button> <button onClick={()=>handleDelete(u.nip)} className="p-2 bg-red-50 text-red-600 rounded-lg"><Trash2 size={14}/></button> </div> </div> ))} </div> </div> ); 
+    }
+
+    function AdminRefs({ defaultKegiatan, defaultRefHasil, defaultKota, showToast }) { 
+      const [kegiatan, setKegiatan] = useState(defaultKegiatan); const [hasil, setHasil] = useState(defaultRefHasil); const [kota, setKota] = useState(defaultKota); const [tempItem, setTempItem] = useState(""); const [activeSection, setActiveSection] = useState('kegiatan'); const [loading, setLoading] = useState(false); 
+      const handleAdd = () => { if (!tempItem) return; if (activeSection === 'kegiatan') setKegiatan([...kegiatan, tempItem]); else setHasil([...hasil, tempItem]); setTempItem(""); }; 
+      const handleDelete = (idx) => { if (activeSection === 'kegiatan') setKegiatan(kegiatan.filter((_, i) => i !== idx)); else setHasil(hasil.filter((_, i) => i !== idx)); }; 
+      const handleSave = async () => { setLoading(true); try { await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'kegiatan', items: kegiatan }) }); await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'hasil', items: hasil }) }); await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_city', kota: kota }) }); showToast("Pengaturan berhasil disimpan!", 'success'); } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); } }; 
+      return ( <div className="space-y-6"> <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm"> <h4 className="font-bold text-gray-800 text-sm mb-2">Pengaturan Umum</h4> <label className="text-xs text-gray-500 block mb-1">Nama Kota (untuk Laporan)</label> <input className="w-full border p-2 rounded text-sm" value={kota} onChange={e=>setKota(e.target.value)} /> </div> <div> <h4 className="font-bold text-gray-800 text-sm mb-3">Editor Referensi Otomatis</h4> <div className="flex gap-2 mb-4"> <button onClick={()=>setActiveSection('kegiatan')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'kegiatan' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-gray-200 text-gray-500'}`}>Daftar Kegiatan</button> <button onClick={()=>setActiveSection('hasil')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'hasil' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-500'}`}>Daftar Hasil</button> </div> <div className="flex gap-2 mb-2"> <input className="flex-1 border p-2 rounded text-sm" placeholder="Tambah item baru..." value={tempItem} onChange={e=>setTempItem(e.target.value)} /> <button onClick={handleAdd} className="bg-gray-800 text-white px-3 rounded"><Plus size={16} /></button> </div> <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm max-h-60 overflow-y-auto"> {(activeSection === 'kegiatan' ? kegiatan : hasil).map((item, i) => ( <div key={i} className="p-3 border-b border-gray-50 flex justify-between items-center text-sm text-gray-700"> <span>{item}</span> <button onClick={()=>handleDelete(i)} className="text-red-400 hover:text-red-600"><X size={14}/></button> </div> ))} </div> </div> <button onClick={handleSave} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-gray-400"> {loading ? 'Menyimpan...' : 'Simpan Semua Perubahan'} </button> </div> ); 
+    }
+
+    function CalendarView({ entries, onSelectDate, selectedDate }) { 
+      const [currentMonth, setCurrentMonth] = useState(new Date()); 
+      const getDaysInMonth = (date) => { const year = date.getFullYear(); const month = date.getMonth(); const days = new Date(year, month + 1, 0).getDate(); const firstDay = new Date(year, month, 1).getDay(); return { days, firstDay }; }; 
+      const { days, firstDay } = getDaysInMonth(currentMonth); 
+      const daysArray = [...Array(days).keys()].map(i => i + 1); 
+      const emptyDays = Array(firstDay).fill(null); 
+      const hasEntry = (day) => { const checkDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day).toDateString(); return entries.some(e => { if(!e.tanggal) return false; return new Date(e.tanggal).toDateString() === checkDate; }); };
+      const isSelected = (day) => { if (!selectedDate) return false; const checkDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day); return selectedDate.toDateString() === checkDate.toDateString(); }; 
+      const nextMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1)); 
+      const prevMonth = () => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1)); 
+      return ( <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-4"> <div className="flex justify-between items-center mb-4"> <button onClick={prevMonth} className="p-1 hover:bg-gray-100 rounded-full"><ChevronLeft size={20}/></button> <h3 className="font-bold text-gray-800">{currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</h3> <button onClick={nextMonth} className="p-1 hover:bg-gray-100 rounded-full"><ChevronRight size={20}/></button> </div> <div className="grid grid-cols-7 gap-1 text-center mb-2"> {['M', 'S', 'S', 'R', 'K', 'J', 'S'].map((d, i) => <div key={i} className="text-xs font-bold text-gray-400">{d}</div>)} </div> <div className="grid grid-cols-7 gap-1"> {emptyDays.map((_, i) => <div key={`empty-${i}`}></div>)} {daysArray.map(day => ( <button key={day} onClick={() => onSelectDate(new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day))} className={`h-9 w-9 rounded-full flex flex-col items-center justify-center text-sm relative transition-all ${isSelected(day) ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-100 text-gray-700'}`} > <span>{day}</span> {hasEntry(day) && ( <span className={`w-1.5 h-1.5 rounded-full absolute bottom-1 transition-colors ${isSelected(day) ? 'bg-white' : 'bg-green-500'}`}></span> )} </button> ))} </div> </div> ); 
+    }
+
     function PrintableReport({ user, entries, principalInfo, kota }) {
       const bulanIni = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
       return (
