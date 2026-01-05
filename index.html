@@ -1039,27 +1039,46 @@
             },
             
             viewImage: function(url) {
-                if(!url || !url.startsWith('http')) return;
+                if(!url) return;
                 
-                // Patch URLs for better WebView compatibility
                 let finalUrl = url;
-                // Patch drive.google.com/uc?id= to drive.google.com/thumbnail?id=&sz=w1000
-                if(url.includes("drive.google.com") && url.includes("id=")) {
-                   try {
-                       const idMatch = url.match(/id=([^&]+)/);
-                       if(idMatch && idMatch[1]) {
-                           finalUrl = `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
-                       }
-                   } catch(e){}
+                
+                // Try to extract File ID from common Drive URL patterns
+                // Pattern 1: id=...
+                // Pattern 2: /d/.../
+                // Pattern 3: /file/d/...
+                let id = null;
+                const idRegex = /[-\w]{25,}/;
+                const match = url.match(idRegex);
+                if (match && (url.includes('drive.google.com') || url.includes('docs.google.com'))) {
+                    id = match[0];
+                }
+
+                if(id) {
+                    // Use lh3.googleusercontent.com for direct robust embedding
+                    // =w1000 means max width 1000px
+                    finalUrl = `https://lh3.googleusercontent.com/d/${id}=w1000`;
                 }
 
                 const imgEl = document.getElementById('modal-img-display');
-                // IMPORTANT: Reset src first to clear previous image state
-                imgEl.src = "";
+                
+                imgEl.src = ""; 
+                imgEl.classList.add('hidden-view'); // Hide until loaded to avoid ugly borders
+                
+                // Inline SVG Placeholder
+                const placeholder = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24' fill='none' stroke='%23ccc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='18' height='18' rx='2' ry='2'/%3E%3Ccircle cx='8.5' cy='8.5' r='1.5'/%3E%3Cpolyline points='21 15 16 10 5 21'/%3E%3C/svg%3E";
+
+                imgEl.onload = function() {
+                    this.classList.remove('hidden-view');
+                }
+
                 imgEl.onerror = function() {
-                    // Fallback placeholder if image fails (CORS/Permissions)
-                    this.src = "https://via.placeholder.com/600x400?text=Gambar+Tidak+Dapat+Dimuat";
+                    this.onerror = null; 
+                    this.src = placeholder;
+                    this.classList.remove('hidden-view');
+                    // Alert suppressed to avoid spamming the user
                 };
+                
                 imgEl.src = finalUrl;
                 document.getElementById('modal-image').classList.remove('hidden-view');
             },
