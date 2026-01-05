@@ -38,24 +38,26 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- HTML2PDF for AppCreator24 Compatibility -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        @media print {
-            .no-print { display: none !important; }
-            .print-only { display: block !important; }
-            body { background: white; color: black; font-family: 'Times New Roman', serif; }
-            .print-container { width: 100%; max-width: 100%; padding: 0; margin: 0; }
-            table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
-            th, td { border: 1px solid black; padding: 6px; text-align: left; vertical-align: top; }
-            th { background-color: #f0f0f0 !important; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; }
-            .page-break { page-break-inside: avoid; }
+        /* PDF Generator Style */
+        #report-container {
+            background: white;
+            color: black;
+            font-family: 'Times New Roman', serif;
+            padding: 20px;
+            width: 100%;
         }
-        @media screen {
-            .print-only { display: none; }
-        }
+        
+        /* Helpers */
         .hidden-view { display: none !important; }
         input, textarea, select { font-size: 16px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        /* Calendar UI */
         .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
         .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 999px; font-size: 0.85rem; cursor: pointer; position: relative; transition: all 0.2s; color: #201a18; }
         .calendar-day.has-data::after { content: ''; width: 5px; height: 5px; background-color: #9c4100; border-radius: 50%; position: absolute; bottom: 4px; }
@@ -84,7 +86,7 @@
         }
         .suggestion-item:hover { background-color: #f5ded5; }
         
-        /* Camera UI fixes based on reference */
+        /* Camera UI fixes */
         video { object-fit: cover; }
     </style>
 </head>
@@ -98,7 +100,7 @@
         <p class="text-onSurfaceVariant font-medium tracking-wide">Memproses data...</p>
     </div>
 
-    <!-- Image Modal Viewer (For History) -->
+    <!-- Image Modal Viewer -->
     <div id="modal-image" class="hidden-view fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4">
         <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white z-20">
             <i data-lucide="x" width="24" height="24"></i>
@@ -107,11 +109,11 @@
         <p class="text-white/70 mt-4 text-sm">Dokumentasi Kegiatan</p>
     </div>
 
-    <!-- IN-APP CAMERA MODAL (ADAPTED FROM PRESENSI MOBILE) -->
+    <!-- IN-APP CAMERA MODAL -->
     <div id="modal-camera" class="hidden-view fixed inset-0 bg-black z-[80] flex flex-col">
         <div class="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
-             <!-- Video element for stream -->
-             <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+             <!-- Video element for stream with attributes for Android WebView -->
+             <video id="camera-stream" autoplay playsinline muted class="w-full h-full object-cover"></video>
              
              <!-- Hidden canvas for capturing -->
              <canvas id="camera-canvas" class="hidden-view"></canvas>
@@ -136,7 +138,7 @@
     </div>
 
     <!-- VIEW: LOGIN -->
-    <div id="view-login" class="no-print min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
+    <div id="view-login" class="min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
         <div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-primaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-secondaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
 
@@ -171,7 +173,7 @@
     </div>
 
     <!-- VIEW: DASHBOARD -->
-    <div id="view-dashboard" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col">
+    <div id="view-dashboard" class="hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col">
         <div class="pt-4 pb-2 flex justify-between items-center bg-surface sticky top-0 z-30">
             <div class="w-10 h-10 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center font-bold text-lg">
                 <span id="user-initial">G</span>
@@ -231,7 +233,7 @@
     </div>
 
     <!-- VIEW: ADMIN MONITOR -->
-    <div id="view-monitor" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
+    <div id="view-monitor" class="hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
          <div class="pt-4 pb-2 flex justify-center items-center bg-surface sticky top-0 z-30">
             <span class="text-lg font-bold text-onSurface flex items-center gap-2">
                 <i data-lucide="shield-check" class="text-primary" width="20" height="20"></i> Monitor KS
@@ -262,7 +264,7 @@
 
 
     <!-- VIEW: PROFILE -->
-    <div id="view-profile" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
+    <div id="view-profile" class="hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
          <div class="pt-4 pb-2 flex justify-center items-center bg-surface sticky top-0 z-30">
             <span class="text-lg font-medium text-onSurface">Profil Guru</span>
         </div>
@@ -326,12 +328,12 @@
                 <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
             </button>
             
-             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.7.0 (In-App Camera)</p>
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 2.0.0 (Fixed)</p>
         </div>
     </div>
 
     <!-- VIEW: FORM -->
-    <div id="view-form" class="no-print hidden-view bg-surface min-h-screen relative z-50">
+    <div id="view-form" class="hidden-view bg-surface min-h-screen relative z-50">
         <div class="sticky top-0 bg-surface z-20 px-4 py-4 flex items-center gap-4 border-b border-surfaceVariant/50">
             <button onclick="app.navigate('dashboard')" class="w-10 h-10 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant transition">
                 <i data-lucide="arrow-left" width="24" height="24"></i>
@@ -432,7 +434,7 @@
     </div>
 
     <!-- MD3 BOTTOM NAVIGATION BAR -->
-    <nav id="bottom-nav" class="no-print hidden-view fixed bottom-0 left-0 right-0 h-[80px] bg-surface border-t border-surfaceVariant/50 flex justify-evenly items-center z-40 max-w-2xl mx-auto">
+    <nav id="bottom-nav" class="hidden-view fixed bottom-0 left-0 right-0 h-[80px] bg-surface border-t border-surfaceVariant/50 flex justify-evenly items-center z-40 max-w-2xl mx-auto">
         <button onclick="app.switchTab('list')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="dashboard">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="layout-list" width="24" height="24"></i>
@@ -468,8 +470,8 @@
         </button>
     </nav>
     
-    <!-- Print View Container -->
-    <div class="print-only p-4">
+    <!-- PDF Generation Container (Hidden View, displayed when generating PDF) -->
+    <div id="report-container" class="hidden-view">
         <div class="text-center mb-6">
             <h2 class="font-bold text-xl uppercase tracking-wide">LAPORAN KINERJA HARIAN GURU</h2>
             <p id="print-school-header" class="text-lg font-bold uppercase"></p>
@@ -486,7 +488,7 @@
             </div>
         </div>
 
-        <table class="w-full mb-8 border-collapse border border-black">
+        <table class="w-full mb-8 border-collapse border border-black text-xs">
             <thead>
                 <tr class="bg-gray-100">
                     <th style="width: 5%; border: 1px solid black; padding: 6px; text-align: center;">No</th>
@@ -500,7 +502,7 @@
             <tbody id="print-table-body"></tbody>
         </table>
 
-        <div class="flex justify-between px-4 mt-8 page-break">
+        <div class="flex justify-between px-4 mt-8">
              <div class="text-center w-64">
                 <p class="mb-16">Mengetahui,<br/>Kepala Sekolah</p>
                 <p class="font-bold underline mb-1" id="print-ks-name">(Nama Kepala Sekolah)</p>
@@ -632,11 +634,9 @@
                 canvas.height = video.videoHeight;
                 
                 // Draw current frame
-                // If front camera, we might want to mirror it, but let's keep it simple for now as per reference
                 context.drawImage(video, 0, 0, canvas.width, canvas.height);
                 
                 // Convert directly to Base64 (JPEG quality 0.5)
-                // This is synchronous and avoids Blob memory issues in WebViews
                 const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                 
                 // Stop camera immediately to save battery/resources
@@ -1033,6 +1033,8 @@
                 this.toggleLoading(false);
             },
             
+            // --- UPDATED PRINT & DOWNLOAD FUNCTIONS FOR WEBVIEW ---
+            
             printReport: async function() {
                  if(!this.user) return;
                  const startDate = document.getElementById('report-start').value;
@@ -1047,8 +1049,10 @@
                     }).then(r => r.json());
                     
                     if(res.success && res.data.length > 0) {
+                        // Render table
                         this.renderPrintTable(res.data);
                         
+                        // Metadata
                         const ksName = res.meta?.ksName || "(Belum ada KS)";
                         const ksNip = res.meta?.ksNip || "-";
                         document.getElementById('print-ks-name').innerText = ksName;
@@ -1060,16 +1064,29 @@
                         const e = new Date(endDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
                         document.querySelector('.print-period').innerText = `${s} s.d. ${e}`;
                         
-                        this.toggleLoading(false);
-                        setTimeout(() => window.print(), 300);
+                        // Use HTML2PDF instead of window.print
+                        const element = document.getElementById('report-container');
+                        element.classList.remove('hidden-view'); // Make visible for capture
+                        
+                        const opt = {
+                          margin:       0.5,
+                          filename:     `Laporan_${this.user.nama}_${startDate}.pdf`,
+                          image:        { type: 'jpeg', quality: 0.98 },
+                          html2canvas:  { scale: 2 },
+                          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                        };
+                        
+                        await html2pdf().set(opt).from(element).save();
+                        
+                        element.classList.add('hidden-view'); // Hide again
+                        
                     } else {
-                        this.toggleLoading(false);
                         alert("Tidak ada data dalam rentang tanggal tersebut.");
                     }
                  } catch(e) {
-                     this.toggleLoading(false);
-                     alert("Gagal memuat data laporan.");
+                     alert("Gagal memuat data laporan: " + e.message);
                  }
+                 this.toggleLoading(false);
             },
 
             downloadExcel: async function() {
@@ -1102,12 +1119,11 @@
                             csvContent += row.join(",") + "\n";
                         });
 
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        // Use Data URI approach instead of Blob for WebView compatibility
+                        const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
                         const link = document.createElement("a");
-                        const url = URL.createObjectURL(blob);
-                        link.setAttribute("href", url);
+                        link.setAttribute("href", uri);
                         link.setAttribute("download", `Laporan_${this.user.nama}_${startDate}_${endDate}.csv`);
-                        link.style.visibility = 'hidden';
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
