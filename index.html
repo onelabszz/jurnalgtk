@@ -59,7 +59,7 @@
       Clock, LogOut, Plus, Save, User, CheckCircle2, 
       Home, BarChart2, Settings, FileText, Bell, Loader2, Link, Printer, Database,
       Mic, Pencil, Trash2, X, FileSpreadsheet, LayoutGrid, List, Image, Users, KeyRound, School,
-      TrendingUp, ListChecks, AlertCircle, CheckCircle, ShieldCheck, ArrowLeft
+      TrendingUp, ListChecks, AlertCircle, CheckCircle, ShieldCheck, ArrowLeft, ExternalLink
     } from 'lucide-react';
 
     // --- KONFIGURASI PENTING ---
@@ -126,6 +126,8 @@
       
       const [suggestionsKegiatan, setSuggestionsKegiatan] = useState(DEFAULT_KEGIATAN);
       const [suggestionsHasil, setSuggestionsHasil] = useState(DEFAULT_HASIL);
+      const [principalInfo, setPrincipalInfo] = useState({ nama: '.............................', nip: '.............................' });
+      
       const [isLoadingRef, setIsLoadingRef] = useState(false);
       const [isDeleting, setIsDeleting] = useState(false);
       
@@ -141,7 +143,7 @@
         if (savedUser) { 
           const u = JSON.parse(savedUser);
           setUser(u);
-          setView('main'); // Semua user (termasuk KS) masuk ke main dulu
+          setView('main'); 
         }
         fetchReferenceData();
       }, []);
@@ -153,6 +155,16 @@
           const data = await response.json();
           if (data.kegiatan && data.kegiatan.length > 0) setSuggestionsKegiatan(data.kegiatan);
           if (data.hasil && data.hasil.length > 0) setSuggestionsHasil(data.hasil);
+          
+          // Fetch Principal Info for Report
+          try {
+             const resKS = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'get_principal_info' }) });
+             const dataKS = await resKS.json();
+             if (dataKS.success) {
+               setPrincipalInfo({ nama: dataKS.nama, nip: dataKS.nip });
+             }
+          } catch (e) { console.warn("Gagal load data KS", e); }
+          
         } catch (error) {
           console.error("Gagal memuat referensi", error);
         } finally {
@@ -164,7 +176,7 @@
         setUser(u); 
         localStorage.setItem('jurnal_user', JSON.stringify(u));
         showToast(`Selamat datang, ${u.nama}!`, 'success');
-        setView('main'); // Semua user masuk ke main
+        setView('main'); 
       };
 
       const handleLogout = () => { setUser(null); localStorage.removeItem('jurnal_user'); setView('login'); showToast('Berhasil keluar', 'info'); };
@@ -211,6 +223,7 @@
             <MainScreen 
               user={user} 
               entries={entries} 
+              principalInfo={principalInfo}
               onLogout={handleLogout} 
               onAdd={() => { setEditingEntry(null); setView('form'); }} 
               onEdit={handleEditClick}
@@ -290,7 +303,6 @@
                       <p className="text-xs text-gray-400">{user.nama}</p>
                    </div>
                 </div>
-                {/* Logout moved to profile tab usually, but kept here for fallback or removed if redundancy unwanted. Keeping logout here too for admin convenience */}
                 <button onClick={onLogout} className="bg-red-600 p-2 rounded-lg text-white hover:bg-red-700"><LogOut size={16} /></button>
              </div>
              <div className="flex gap-2">
@@ -309,7 +321,6 @@
       );
     }
 
-    // ... AdminStats, AdminUsers, AdminRefs components remain unchanged ...
     function AdminStats() {
       const [stats, setStats] = useState([]);
       const [loading, setLoading] = useState(false);
@@ -438,7 +449,7 @@
 
     function AdminRefs({ defaultKegiatan, defaultRefHasil, showToast }) {
        const [kegiatan, setKegiatan] = useState(defaultKegiatan);
-       const [hasil, setHasil] = useState(defaultRefHasil); // Fixed variable name mapping
+       const [hasil, setHasil] = useState(defaultRefHasil);
        const [tempItem, setTempItem] = useState("");
        const [activeSection, setActiveSection] = useState('kegiatan');
        const [loading, setLoading] = useState(false);
@@ -590,7 +601,7 @@
     }
 
     // --- SCREEN 2: MAIN LAYOUT ---
-    function MainScreen({ user, entries, onLogout, onAdd, onEdit, onDelete, isDeleting, showToast, onOpenAdmin }) {
+    function MainScreen({ user, entries, onLogout, onAdd, onEdit, onDelete, isDeleting, showToast, onOpenAdmin, principalInfo }) {
       const [activeTab, setActiveTab] = useState('home');
 
       return (
@@ -617,13 +628,11 @@
             <NavButton icon={<BarChart2 size={22} />} label="Rekap" active={activeTab === 'rekap'} onClick={() => setActiveTab('rekap')} />
             <NavButton icon={<User size={22} />} label="Profil" active={activeTab === 'profile'} onClick={() => setActiveTab('profile')} />
           </div>
-          <PrintableReport user={user} entries={entries} />
+          <PrintableReport user={user} entries={entries} principalInfo={principalInfo} />
         </div>
       );
     }
 
-    // ... HomeTab, RekapTab components remain unchanged ...
-    
     // --- TABS COMPONENTS ---
     function HomeTab({ user, entries, onEdit, onDelete }) {
       const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
@@ -639,7 +648,7 @@
           <div className="bg-white px-6 pt-10 pb-6 shadow-sm z-10 sticky top-0">
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-800">Halo, Pak {user.nama.split(' ')[0]}</h2>
+                <h2 className="text-xl font-bold text-gray-800">Halo, {user.nama}</h2>
                 <p className="text-xs text-gray-500">Semangat mengajar hari ini!</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 font-bold border-2 border-white shadow-sm">{user.nama.charAt(0)}</div>
@@ -680,7 +689,10 @@
                    </div>
                    <div className="flex-1 min-w-0 pr-14">
                       <h4 className="font-semibold text-gray-800 text-sm leading-tight mb-1">{entry.kegiatan}</h4>
-                      <p className="text-xs text-gray-500 line-clamp-2 bg-gray-50 p-2 rounded-lg">{entry.hasil}</p>
+                      <div className="bg-gray-50 p-2 rounded-lg flex gap-2">
+                          <p className="text-xs text-gray-500 line-clamp-2 flex-1">{entry.hasil}</p>
+                          {entry.foto && <Camera size={14} className="text-blue-500 shrink-0 mt-0.5" />}
+                      </div>
                       {entry.foto && <div className="mt-2 inline-flex items-center gap-1 text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded border border-blue-100"><Camera size={10} /> Foto Terlampir</div>}
                    </div>
                    <div className="absolute right-4 top-4 flex flex-col gap-2">
@@ -703,7 +715,7 @@
         
         // Header
         let csvContent = "data:text/csv;charset=utf-8,";
-        csvContent += "Tanggal,Jam Mulai,Jam Selesai,NIP,Nama,Kegiatan,Hasil\n";
+        csvContent += "Tanggal,Jam Mulai,Jam Selesai,NIP,Nama,Kegiatan,Hasil,Link Foto\n";
         
         // Rows
         entries.forEach(e => {
@@ -711,7 +723,8 @@
           // Escape quotes within string by doubling them
           const kegiatan = `"${e.kegiatan.replace(/"/g, '""')}"`;
           const hasil = `"${e.hasil.replace(/"/g, '""')}"`;
-          csvContent += `${date},${e.jamMulai || ''},${e.jamSelesai || ''},'${user.nip},${user.nama},${kegiatan},${hasil}\n`;
+          const foto = `"${e.foto || ''}"`;
+          csvContent += `${date},${e.jamMulai || ''},${e.jamSelesai || ''},'${user.nip},${user.nama},${kegiatan},${hasil},${foto}\n`;
         });
 
         const encodedUri = encodeURI(csvContent);
@@ -993,7 +1006,7 @@
     }
     
     // --- PRINTABLE REPORT (Revised for Landscape & Excel Look) ---
-    function PrintableReport({ user, entries }) {
+    function PrintableReport({ user, entries, principalInfo }) {
       const bulanIni = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
       return (
         <div className="print-only bg-white text-black p-0 text-xs">
@@ -1025,11 +1038,12 @@
                 <th className="border border-black p-2 w-24">Waktu</th>
                 <th className="border border-black p-2">Uraian Kegiatan</th>
                 <th className="border border-black p-2 w-1/4">Hasil / Output</th>
+                <th className="border border-black p-2 w-24">Link Lampiran</th>
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
-                 <tr><td colSpan="5" className="border border-black p-4 text-center italic">Tidak ada data jurnal bulan ini.</td></tr>
+                 <tr><td colSpan="6" className="border border-black p-4 text-center italic">Tidak ada data jurnal bulan ini.</td></tr>
               ) : (
                 entries.map((e, idx) => (
                   <tr key={idx} className="page-break">
@@ -1038,6 +1052,11 @@
                     <td className="border border-black p-2 text-center align-top whitespace-nowrap">{e.jamMulai} - {e.jamSelesai}</td>
                     <td className="border border-black p-2 align-top text-justify">{e.kegiatan}</td>
                     <td className="border border-black p-2 align-top text-justify">{e.hasil}</td>
+                    <td className="border border-black p-2 align-top text-center">
+                        {e.foto ? (
+                            <span className="text-blue-600 underline text-[10px] break-all">{e.foto.substring(0, 30)}...</span>
+                        ) : "-"}
+                    </td>
                   </tr>
                 ))
               )}
@@ -1048,8 +1067,8 @@
              <div className="text-center w-64">
                 <p>Mengetahui,</p>
                 <p className="font-bold mb-20">Kepala Sekolah</p>
-                <p className="border-b border-black inline-block min-w-[150px] font-bold">&nbsp;</p>
-                <p className="mt-1">NIP. .....................................</p>
+                <p className="font-bold border-b border-black inline-block min-w-[150px]">{principalInfo.nama}</p>
+                <p className="mt-1">NIP. {principalInfo.nip}</p>
              </div>
              <div className="text-center w-64">
                 <p>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
