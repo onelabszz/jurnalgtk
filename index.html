@@ -150,7 +150,7 @@
         <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white z-20">
             <i data-lucide="x" width="24" height="24"></i>
         </button>
-        <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl">
+        <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl" crossorigin="anonymous">
         <p class="text-white/70 mt-4 text-sm">Dokumentasi Kegiatan</p>
     </div>
 
@@ -369,7 +369,7 @@
                 <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
             </button>
             
-             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.5.2 (Stability Fix)</p>
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.6.0 (Image Fix)</p>
         </div>
     </div>
 
@@ -441,23 +441,22 @@
                 <label class="text-sm font-bold text-secondary uppercase tracking-wider block mb-3">Dokumentasi</label>
                 <div class="flex flex-col gap-4">
                     <div class="flex gap-3">
-                        <!-- FIX: Gunakan Label sebagai pembungkus Input agar trigger native camera bekerja -->
-                        <!-- FIX: Use image/* for general compatibility in AppCreator24/WebView -->
-                        <label class="flex-1 relative cursor-pointer group">
-                             <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
+                        <!-- FIX: Use FOR attribute instead of nesting to improve WebView event handling -->
+                        <!-- Input Camera: Capture enforced -->
+                        <div class="flex-1">
+                            <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="hidden">
+                            <label for="inp-foto-camera" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
                                 <i data-lucide="camera" width="20" height="20"></i> Kamera
-                             </div>
-                             <!-- capture="environment" forces camera on mobile -->
-                             <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                        </label>
+                            </label>
+                        </div>
                         
-                        <label class="flex-1 relative cursor-pointer group">
-                            <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
+                        <!-- Input Gallery: Capture removed explicitly -->
+                        <div class="flex-1">
+                            <input type="file" id="inp-foto-gallery" accept="image/*" class="hidden">
+                             <label for="inp-foto-gallery" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
                                 <i data-lucide="image" width="20" height="20"></i> Galeri
-                            </div>
-                            <!-- No capture attribute allows picking from gallery -->
-                            <input type="file" id="inp-foto-gallery" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
-                        </label>
+                            </label>
+                        </div>
                     </div>
 
                     
@@ -1000,7 +999,19 @@
             
             viewImage: function(url) {
                 if(!url || !url.startsWith('http')) return;
-                document.getElementById('modal-img-display').src = url;
+                
+                // HOTFIX: Patch legacy Drive UC links to Thumbnail links for better WebView support
+                let finalUrl = url;
+                if(url.includes("drive.google.com/uc?")) {
+                   try {
+                       const idMatch = url.match(/id=([^&]+)/);
+                       if(idMatch && idMatch[1]) {
+                           finalUrl = `https://drive.google.com/thumbnail?id=${idMatch[1]}&sz=w1000`;
+                       }
+                   } catch(e){}
+                }
+
+                document.getElementById('modal-img-display').src = finalUrl;
                 document.getElementById('modal-image').classList.remove('hidden-view');
             },
             
