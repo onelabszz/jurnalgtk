@@ -11,30 +11,26 @@
             theme: {
                 extend: {
                     colors: {
-                        // Material 3 Orange / Terra Cotta Theme
-                        primary: '#9c4100',       // Deep Orange / Burnt Sienna
+                        primary: '#9c4100',
                         onPrimary: '#ffffff',
-                        primaryContainer: '#ffdbc8', // Peach/Pale Orange
-                        onPrimaryContainer: '#341100', // Very Dark Brown/Orange
-                        
-                        secondary: '#77574e',     // Warm Brownish Grey
+                        primaryContainer: '#ffdbc8',
+                        onPrimaryContainer: '#341100',
+                        secondary: '#77574e',
                         secondaryContainer: '#ffdbcc',
                         onSecondaryContainer: '#2c160f',
-                        
-                        surface: '#fff8f6',       // Very Warm White
-                        onSurface: '#201a18',     // Dark Warm Grey
-                        surfaceVariant: '#f5ded5', // Beige
-                        onSurfaceVariant: '#53433f', // Brownish Text
-                        
+                        surface: '#fff8f6',
+                        onSurface: '#201a18',
+                        surfaceVariant: '#f5ded5',
+                        onSurfaceVariant: '#53433f',
                         outline: '#85736b',
                         error: '#ba1a1a',
                     },
                     fontFamily: {
                         sans: ['Roboto', 'Segoe UI', 'sans-serif'],
-                        serif: ['Times New Roman', 'serif'], // For official reports
+                        serif: ['Times New Roman', 'serif'],
                     },
                     borderRadius: {
-                        '4xl': '28px', // MD3 Standard Corner
+                        '4xl': '28px',
                     }
                 }
             }
@@ -43,102 +39,56 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        /* CSS resets and print styles */
         @media print {
             .no-print { display: none !important; }
             .print-only { display: block !important; }
             body { background: white; color: black; font-family: 'Times New Roman', serif; }
             .print-container { width: 100%; max-width: 100%; padding: 0; margin: 0; }
-            
             table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 10px; }
             th, td { border: 1px solid black; padding: 6px; text-align: left; vertical-align: top; }
             th { background-color: #f0f0f0 !important; text-align: center; font-weight: bold; -webkit-print-color-adjust: exact; }
-            
             .page-break { page-break-inside: avoid; }
         }
         @media screen {
             .print-only { display: none; }
         }
         .hidden-view { display: none !important; }
-        input, textarea, select { font-size: 16px; } /* Prevents zoom on iOS */
-        
-        /* Custom Scrollbar */
+        input, textarea, select { font-size: 16px; }
         .hide-scroll::-webkit-scrollbar { display: none; }
         .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-
-        /* MD3 Ripple Effect Simulation */
-        .ripple {
-            position: relative;
-            overflow: hidden;
-            transform: translate3d(0, 0, 0);
-        }
-        .ripple:after {
-            content: "";
-            display: block;
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+        .calendar-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 999px; font-size: 0.85rem; cursor: pointer; position: relative; transition: all 0.2s; color: #201a18; }
+        .calendar-day.has-data::after { content: ''; width: 5px; height: 5px; background-color: #9c4100; border-radius: 50%; position: absolute; bottom: 4px; }
+        .calendar-day.selected { background-color: #9c4100; color: white; }
+        .calendar-day.selected.has-data::after { background-color: #ffdbc8; }
+        .calendar-day.today { border: 1px solid #9c4100; color: #9c4100; }
+        
+        /* Suggestion List Style */
+        .suggestion-list {
+            max-height: 150px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 0 0 12px 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             position: absolute;
             width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            background-image: radial-gradient(circle, #000 10%, transparent 10.01%);
-            background-repeat: no-repeat;
-            background-position: 50%;
-            transform: scale(10, 10);
-            opacity: 0;
-            transition: transform .5s, opacity 1s;
+            z-index: 50;
+            top: 100%; /* Below input */
         }
-        .ripple:active:after {
-            transform: scale(0, 0);
-            opacity: .1;
-            transition: 0s;
-        }
-
-        /* Calendar Styles */
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 4px;
-        }
-        .calendar-day {
-            aspect-ratio: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            border-radius: 999px; /* Circle */
-            font-size: 0.85rem;
+        .suggestion-item {
+            padding: 8px 12px;
             cursor: pointer;
-            position: relative;
-            transition: all 0.2s;
-            color: #201a18;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
         }
-        .calendar-day.has-data::after {
-            content: '';
-            width: 5px;
-            height: 5px;
-            background-color: #9c4100;
-            border-radius: 50%;
-            position: absolute;
-            bottom: 4px;
-        }
-        .calendar-day.selected {
-            background-color: #9c4100;
-            color: white;
-        }
-        .calendar-day.selected.has-data::after {
-            background-color: #ffdbc8;
-        }
-        .calendar-day.today {
-            border: 1px solid #9c4100;
-            color: #9c4100;
-        }
+        .suggestion-item:hover { background-color: #f5ded5; }
     </style>
 </head>
 <body class="bg-surface text-onSurface min-h-screen relative font-sans selection:bg-primaryContainer selection:text-onPrimaryContainer">
 
     <!-- Loading Overlay -->
-    <div id="loading-overlay" class="hidden-view fixed inset-0 bg-surface/90 z-50 flex items-center justify-center flex-col">
+    <div id="loading-overlay" class="hidden-view fixed inset-0 bg-surface/90 z-[70] flex items-center justify-center flex-col">
         <div class="animate-spin text-primary mb-4">
             <i data-lucide="loader-2" width="48" height="48"></i>
         </div>
@@ -150,17 +100,41 @@
         <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white z-20">
             <i data-lucide="x" width="24" height="24"></i>
         </button>
-        <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl" crossorigin="anonymous">
+        <!-- Added referrerpolicy to fix Google Drive image loading -->
+        <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl" crossorigin="anonymous" referrerpolicy="no-referrer">
         <p class="text-white/70 mt-4 text-sm">Dokumentasi Kegiatan</p>
+    </div>
+
+    <!-- IN-APP CAMERA MODAL -->
+    <div id="modal-camera" class="hidden-view fixed inset-0 bg-black z-[80] flex flex-col">
+        <div class="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
+             <video id="camera-stream" autoplay playsinline class="w-full h-full object-cover"></video>
+             <canvas id="camera-canvas" class="hidden-view"></canvas>
+             
+             <!-- Camera Guides -->
+             <div class="absolute inset-0 border-2 border-white/30 pointer-events-none m-8 rounded-lg"></div>
+        </div>
+        
+        <div class="h-32 bg-black flex items-center justify-between px-8 pb-4">
+            <button onclick="app.stopCamera()" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <i data-lucide="x" width="24" height="24"></i>
+            </button>
+            
+            <button onclick="app.takePicture()" class="w-20 h-20 rounded-full bg-white border-4 border-gray-300 flex items-center justify-center active:scale-95 transition">
+                <div class="w-16 h-16 rounded-full bg-white border-2 border-black"></div>
+            </button>
+            
+            <button onclick="app.switchCamera()" class="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center text-white">
+                <i data-lucide="refresh-cw" width="24" height="24"></i>
+            </button>
+        </div>
     </div>
 
     <!-- VIEW: LOGIN -->
     <div id="view-login" class="no-print min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
-        <!-- Orange Gradient Decoration -->
         <div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-primaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-secondaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
 
-        <!-- MD3 Header Style -->
         <div class="w-full max-w-sm flex flex-col items-center z-10">
             <div class="mb-8 p-6 bg-primaryContainer rounded-[28px] text-onPrimaryContainer shadow-sm">
                 <i data-lucide="book-open-check" width="48" height="48"></i>
@@ -193,23 +167,19 @@
 
     <!-- VIEW: DASHBOARD -->
     <div id="view-dashboard" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col">
-        <!-- Top Bar -->
         <div class="pt-4 pb-2 flex justify-between items-center bg-surface sticky top-0 z-30">
             <div class="w-10 h-10 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center font-bold text-lg">
                 <span id="user-initial">G</span>
             </div>
             <span class="text-lg font-medium text-onSurface">Jurnal Guru</span>
-            <!-- Print button moved to Profile -->
             <div class="w-10 h-10"></div> 
         </div>
 
-        <!-- Greeting Area -->
         <div class="py-6">
             <h1 class="text-3xl font-normal text-onSurface">Halo, <span id="user-name" class="font-medium">Guru</span></h1>
             <p class="text-onSurfaceVariant mt-1" id="user-school">Unit Kerja</p>
         </div>
         
-        <!-- Filter Chips (Horizontal Scroll) -->
         <div class="flex gap-3 overflow-x-auto hide-scroll mb-6 pb-2">
             <div class="relative min-w-[140px]">
                 <select id="filter-month" class="w-full appearance-none bg-surfaceVariant text-onSurfaceVariant pl-4 pr-10 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"></select>
@@ -221,16 +191,11 @@
             </div>
         </div>
 
-        <!-- Content Area -->
         <div class="flex-grow">
-            <!-- List View -->
             <div id="tab-content-list">
-                 <div id="dashboard-list" class="space-y-3">
-                     <!-- Items injected here by JS -->
-                 </div>
+                 <div id="dashboard-list" class="space-y-3"></div>
             </div>
 
-            <!-- Calendar View -->
             <div id="tab-content-calendar" class="hidden-view">
                 <div class="bg-surfaceVariant/30 p-6 rounded-[28px] mb-6 border border-surfaceVariant/20">
                     <div class="grid grid-cols-7 mb-4 text-center text-sm font-medium text-onSurfaceVariant">
@@ -249,7 +214,6 @@
             </div>
         </div>
 
-        <!-- Empty State Template -->
         <template id="template-empty">
             <div class="flex flex-col items-center justify-center py-20 text-center">
                 <div class="w-24 h-24 bg-surfaceVariant rounded-[28px] flex items-center justify-center mb-4 text-onSurfaceVariant opacity-50">
@@ -261,9 +225,8 @@
         </template>
     </div>
 
-    <!-- VIEW: ADMIN MONITOR (NEW) -->
+    <!-- VIEW: ADMIN MONITOR -->
     <div id="view-monitor" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
-         <!-- Top Bar -->
          <div class="pt-4 pb-2 flex justify-center items-center bg-surface sticky top-0 z-30">
             <span class="text-lg font-bold text-onSurface flex items-center gap-2">
                 <i data-lucide="shield-check" class="text-primary" width="20" height="20"></i> Monitor KS
@@ -271,7 +234,6 @@
         </div>
         
         <div class="py-4 space-y-4">
-            <!-- Filter Guru -->
             <div class="relative">
                 <label class="text-xs font-bold text-secondary uppercase tracking-wider mb-1 block">Pilih Guru</label>
                 <select id="admin-filter-guru" onchange="app.fetchAdminHistory()" class="w-full appearance-none bg-surfaceVariant/50 text-onSurface pl-4 pr-10 py-3 rounded-xl border-none focus:ring-2 focus:ring-primary">
@@ -279,8 +241,6 @@
                 </select>
                 <i data-lucide="chevron-down" width="16" height="16" class="absolute right-3 top-9 pointer-events-none text-onSurfaceVariant"></i>
             </div>
-
-            <!-- Filter Tanggal -->
             <div class="grid grid-cols-2 gap-3">
                  <div class="relative">
                      <label class="text-xs font-bold text-secondary uppercase tracking-wider mb-1 block">Dari</label>
@@ -292,16 +252,12 @@
                  </div>
             </div>
         </div>
-
-        <div id="admin-list-container" class="space-y-3 flex-grow mt-2">
-            <!-- Admin items go here -->
-        </div>
+        <div id="admin-list-container" class="space-y-3 flex-grow mt-2"></div>
     </div>
 
 
     <!-- VIEW: PROFILE -->
     <div id="view-profile" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
-         <!-- Top Bar -->
          <div class="pt-4 pb-2 flex justify-center items-center bg-surface sticky top-0 z-30">
             <span class="text-lg font-medium text-onSurface">Profil Guru</span>
         </div>
@@ -315,7 +271,6 @@
         </div>
 
         <div class="space-y-4 w-full">
-            <!-- Info Card -->
             <div class="bg-surfaceVariant/30 p-5 rounded-[24px] border border-surfaceVariant/50">
                 <div class="space-y-3">
                     <div>
@@ -330,7 +285,6 @@
                 </div>
             </div>
 
-            <!-- Report Card -->
             <div class="bg-surface p-5 rounded-[24px] border border-outline/30 shadow-sm">
                 <div class="flex items-center gap-3 mb-4">
                     <div class="w-10 h-10 rounded-full bg-secondaryContainer flex items-center justify-center text-onSecondaryContainer">
@@ -342,7 +296,6 @@
                     </div>
                 </div>
                 
-                <!-- Date Range Inputs -->
                 <div class="grid grid-cols-2 gap-3 mb-4">
                     <div class="relative">
                         <label class="text-[10px] uppercase font-bold text-secondary mb-1 block">Dari</label>
@@ -364,18 +317,16 @@
                 </div>
             </div>
 
-            <!-- Logout Button -->
             <button onclick="app.logout()" class="w-full py-4 mt-4 text-error font-medium bg-error/5 rounded-full hover:bg-error/10 transition border border-error/10 flex items-center justify-center gap-2">
                 <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
             </button>
             
-             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.6.0 (Image Fix)</p>
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.7.0 (In-App Camera)</p>
         </div>
     </div>
 
     <!-- VIEW: FORM -->
     <div id="view-form" class="no-print hidden-view bg-surface min-h-screen relative z-50">
-        <!-- Form Header (Top App Bar) -->
         <div class="sticky top-0 bg-surface z-20 px-4 py-4 flex items-center gap-4 border-b border-surfaceVariant/50">
             <button onclick="app.navigate('dashboard')" class="w-10 h-10 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant transition">
                 <i data-lucide="arrow-left" width="24" height="24"></i>
@@ -387,14 +338,11 @@
         </div>
         
         <form id="form-jurnal" class="p-4 space-y-6 max-w-lg mx-auto pb-24">
-            <!-- Hidden ID -->
             <input type="hidden" id="inp-id" value="">
             
-            <!-- Date & Time Card -->
             <div class="bg-surface p-0">
                 <h3 class="text-sm font-bold text-secondary uppercase tracking-wider mb-4">Waktu Pelaksanaan</h3>
                 <div class="grid grid-cols-1 gap-4">
-                    <!-- Date Input (Outlined) -->
                     <div class="relative">
                         <input type="date" id="inp-tanggal" required class="w-full px-4 py-3 bg-transparent border border-outline rounded-lg text-onSurface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
                     </div>
@@ -414,8 +362,8 @@
 
             <div class="h-px bg-surfaceVariant"></div>
 
-            <!-- Kegiatan -->
-            <div>
+            <!-- Kegiatan dengan Suggestion -->
+            <div class="relative">
                 <div class="flex justify-between items-center mb-2">
                     <label class="text-sm font-bold text-secondary uppercase tracking-wider">Uraian Kegiatan</label>
                     <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan" class="w-8 h-8 rounded-full bg-secondaryContainer text-onSecondaryContainer flex items-center justify-center">
@@ -423,10 +371,12 @@
                     </button>
                 </div>
                 <textarea id="inp-kegiatan" required rows="4" class="w-full p-4 bg-surfaceVariant/30 rounded-2xl border-none focus:ring-2 focus:ring-primary text-onSurface placeholder-onSurfaceVariant/50 resize-none" placeholder="Ceritakan kegiatan hari ini..."></textarea>
+                <!-- Suggestion List Container -->
+                <div id="suggest-kegiatan" class="suggestion-list hidden-view"></div>
             </div>
 
-            <!-- Hasil -->
-            <div>
+            <!-- Hasil dengan Suggestion -->
+            <div class="relative">
                 <div class="flex justify-between items-center mb-2">
                     <label class="text-sm font-bold text-secondary uppercase tracking-wider">Hasil / Output</label>
                     <button type="button" onclick="app.toggleVoice('hasil')" id="btn-voice-hasil" class="w-8 h-8 rounded-full bg-secondaryContainer text-onSecondaryContainer flex items-center justify-center">
@@ -434,6 +384,8 @@
                     </button>
                 </div>
                 <textarea id="inp-hasil" required rows="2" class="w-full p-4 bg-surfaceVariant/30 rounded-2xl border-none focus:ring-2 focus:ring-primary text-onSurface placeholder-onSurfaceVariant/50 resize-none" placeholder="Hasil yang dicapai..."></textarea>
+                <!-- Suggestion List Container -->
+                <div id="suggest-hasil" class="suggestion-list hidden-view"></div>
             </div>
 
             <!-- Foto -->
@@ -441,16 +393,14 @@
                 <label class="text-sm font-bold text-secondary uppercase tracking-wider block mb-3">Dokumentasi</label>
                 <div class="flex flex-col gap-4">
                     <div class="flex gap-3">
-                        <!-- FIX: Use FOR attribute instead of nesting to improve WebView event handling -->
-                        <!-- Input Camera: Capture enforced -->
+                        <!-- IN-APP CAMERA BUTTON -->
                         <div class="flex-1">
-                            <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="hidden">
-                            <label for="inp-foto-camera" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
+                            <button type="button" onclick="app.startCamera()" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
                                 <i data-lucide="camera" width="20" height="20"></i> Kamera
-                            </label>
+                            </button>
                         </div>
                         
-                        <!-- Input Gallery: Capture removed explicitly -->
+                        <!-- Input Gallery -->
                         <div class="flex-1">
                             <input type="file" id="inp-foto-gallery" accept="image/*" class="hidden">
                              <label for="inp-foto-gallery" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
@@ -474,14 +424,12 @@
                 </div>
             </div>
             
-            <!-- Spacer for FAB/Bottom -->
             <div class="h-8"></div>
         </form>
     </div>
 
     <!-- MD3 BOTTOM NAVIGATION BAR -->
     <nav id="bottom-nav" class="no-print hidden-view fixed bottom-0 left-0 right-0 h-[80px] bg-surface border-t border-surfaceVariant/50 flex justify-evenly items-center z-40 max-w-2xl mx-auto">
-        <!-- Tab: List -->
         <button onclick="app.switchTab('list')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="dashboard">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="layout-list" width="24" height="24"></i>
@@ -489,7 +437,6 @@
             <span class="text-xs font-medium text-onSurfaceVariant group-hover:text-onSurface">Jurnal</span>
         </button>
 
-        <!-- Tab: Calendar -->
         <button onclick="app.switchTab('calendar')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="calendar">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="calendar-days" width="24" height="24"></i>
@@ -497,7 +444,6 @@
             <span class="text-xs font-medium text-onSurfaceVariant group-hover:text-onSurface">Kalender</span>
         </button>
         
-        <!-- Tab: Monitor (KS ONLY) -->
         <button onclick="app.navigate('monitor')" id="nav-monitor" class="hidden-view nav-item group flex flex-col items-center gap-1 w-20" data-target="monitor">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="shield-check" width="24" height="24"></i>
@@ -505,14 +451,12 @@
             <span class="text-xs font-medium text-onSurfaceVariant group-hover:text-onSurface">Monitor</span>
         </button>
 
-        <!-- FAB (Floating Action Button) -->
         <div class="absolute bottom-[88px] right-4 md:right-auto md:translate-x-[260px]">
             <button onclick="app.createNew()" class="w-14 h-14 bg-primaryContainer text-onPrimaryContainer rounded-[16px] shadow-lg hover:shadow-xl transition-all active:scale-95 flex items-center justify-center">
                 <i data-lucide="plus" width="28" height="28"></i>
             </button>
         </div>
 
-        <!-- Tab: Profile -->
         <button onclick="app.navigate('profile')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="profile">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="user" width="24" height="24"></i>
@@ -523,7 +467,6 @@
     
     <!-- Print View Container -->
     <div class="print-only p-4">
-        <!-- Header Laporan -->
         <div class="text-center mb-6">
             <h2 class="font-bold text-xl uppercase tracking-wide">LAPORAN KINERJA HARIAN GURU</h2>
             <p id="print-school-header" class="text-lg font-bold uppercase"></p>
@@ -554,16 +497,13 @@
             <tbody id="print-table-body"></tbody>
         </table>
 
-        <!-- Signature Block -->
         <div class="flex justify-between px-4 mt-8 page-break">
-            <!-- Mengetahui (Kiri) -->
              <div class="text-center w-64">
                 <p class="mb-16">Mengetahui,<br/>Kepala Sekolah</p>
                 <p class="font-bold underline mb-1" id="print-ks-name">(Nama Kepala Sekolah)</p>
                 <p class="text-xs">NIP. <span id="print-ks-nip">...</span></p>
             </div>
 
-            <!-- Guru (Kanan) -->
             <div class="text-center w-64">
                 <p class="mb-1"><span id="print-city">Jakarta</span>, <span id="print-date">...</span></p>
                 <p class="mb-16">Guru Yang Bersangkutan</p>
@@ -575,25 +515,25 @@
 
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
-        
-        // KONFIGURASI KOTA DEFAULT
         const DEFAULT_CITY = "Jakarta"; 
 
         const app = {
             user: null,
             history: [],
             meta: {}, 
-            teachers: [], // List guru for admin
+            teachers: [],
+            refs: { kegiatan: [], hasil: [] }, // Store references
             currentPhotoBase64: "",
-            currentPreviewUrl: "", // Track object URL to revoke it
+            currentPreviewUrl: "", 
             isListening: null,
             selectedDate: null, 
             currentTab: 'list', 
             isAdmin: false,
-            
+            videoStream: null, // For Camera
+
             init: function() {
-                // MOVE UP: Init filters BEFORE checking login/navigating
                 this.initFilters('filter-month', 'filter-year');
+                this.fetchRefs(); // Fetch suggestions on init
 
                 const stored = localStorage.getItem('jg_user');
                 if (stored) {
@@ -604,25 +544,133 @@
                     this.navigate('login');
                 }
                 
-                // Init Report Date Defaults (Start of Month -> Today)
                 const today = new Date();
                 const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-                const isoStart = firstDay.toISOString().split('T')[0];
-                const isoEnd = today.toISOString().split('T')[0];
-                
-                document.getElementById('report-start').value = isoStart;
-                document.getElementById('report-end').value = isoEnd;
-                
-                // Init Admin Filter Defaults
-                document.getElementById('admin-filter-start').value = isoStart;
-                document.getElementById('admin-filter-end').value = isoEnd;
+                document.getElementById('report-start').value = firstDay.toISOString().split('T')[0];
+                document.getElementById('report-end').value = today.toISOString().split('T')[0];
+                document.getElementById('admin-filter-start').value = firstDay.toISOString().split('T')[0];
+                document.getElementById('admin-filter-end').value = today.toISOString().split('T')[0];
 
                 document.getElementById('form-login').addEventListener('submit', (e) => this.handleLogin(e));
                 document.getElementById('form-jurnal').addEventListener('submit', (e) => this.handleSave(e));
-                document.getElementById('inp-foto-camera').addEventListener('change', (e) => this.handleImage(e));
                 document.getElementById('inp-foto-gallery').addEventListener('change', (e) => this.handleImage(e));
                 
+                // Autocomplete Listeners
+                this.setupAutocomplete('inp-kegiatan', 'suggest-kegiatan', 'kegiatan');
+                this.setupAutocomplete('inp-hasil', 'suggest-hasil', 'hasil');
+
                 lucide.createIcons();
+            },
+            
+            // --- IN-APP CAMERA LOGIC ---
+            startCamera: async function() {
+                try {
+                    const video = document.getElementById('camera-stream');
+                    // Request Back Camera
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        video: { facingMode: 'environment' } 
+                    });
+                    this.videoStream = stream;
+                    video.srcObject = stream;
+                    document.getElementById('modal-camera').classList.remove('hidden-view');
+                } catch (err) {
+                    alert("Gagal membuka kamera. Pastikan izin kamera diberikan.");
+                    console.error(err);
+                }
+            },
+
+            stopCamera: function() {
+                if (this.videoStream) {
+                    this.videoStream.getTracks().forEach(track => track.stop());
+                    this.videoStream = null;
+                }
+                document.getElementById('modal-camera').classList.add('hidden-view');
+            },
+
+            takePicture: function() {
+                const video = document.getElementById('camera-stream');
+                const canvas = document.getElementById('camera-canvas');
+                const context = canvas.getContext('2d');
+                
+                // Set canvas dimensions to video dimensions
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                
+                // Draw current frame
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                // Stop stream
+                this.stopCamera();
+                
+                // Convert to Blob for compression/preview
+                canvas.toBlob((blob) => {
+                     this.processImageBlob(blob);
+                }, 'image/jpeg', 0.9);
+            },
+            
+            switchCamera: async function() {
+                 if (this.videoStream) {
+                    this.videoStream.getTracks().forEach(track => track.stop());
+                 }
+                 // Simple toggle implementation logic implies re-requesting with user facingMode if needed, 
+                 // but typically 'environment' is what we want. 
+                 // For now, let's just restart (future improvement: toggle facingMode var).
+                 this.startCamera();
+            },
+
+            // --- AUTOCOMPLETE LOGIC ---
+            fetchRefs: async function() {
+                try {
+                    const res = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'get_ref' })
+                    }).then(r => r.json());
+                    if(res.success) {
+                        this.refs.kegiatan = res.kegiatan || [];
+                        this.refs.hasil = res.hasil || [];
+                    }
+                } catch(e) { console.error("Err fetch ref"); }
+            },
+
+            setupAutocomplete: function(inputId, listId, refKey) {
+                const input = document.getElementById(inputId);
+                const list = document.getElementById(listId);
+
+                input.addEventListener('input', () => {
+                    const val = input.value.toLowerCase();
+                    if(val.length < 2) {
+                        list.innerHTML = '';
+                        list.classList.add('hidden-view');
+                        return;
+                    }
+                    
+                    const matches = this.refs[refKey].filter(item => item.toLowerCase().includes(val));
+                    
+                    if(matches.length > 0) {
+                        list.innerHTML = '';
+                        matches.forEach(match => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerText = match;
+                            div.onclick = () => {
+                                input.value = match;
+                                list.innerHTML = '';
+                                list.classList.add('hidden-view');
+                            };
+                            list.appendChild(div);
+                        });
+                        list.classList.remove('hidden-view');
+                    } else {
+                        list.classList.add('hidden-view');
+                    }
+                });
+                
+                // Hide when clicking outside
+                document.addEventListener('click', (e) => {
+                    if(e.target !== input && e.target !== list) {
+                        list.classList.add('hidden-view');
+                    }
+                });
             },
             
             checkAdminStatus: function() {
@@ -671,7 +719,7 @@
                         method: 'POST',
                         body: JSON.stringify({ 
                             action: 'read_history', 
-                            nip: this.user.nip, // Requester
+                            nip: this.user.nip, 
                             asAdmin: true,
                             targetNip: targetNip,
                             startDate: startDate,
@@ -686,7 +734,6 @@
                             container.innerHTML = `<div class="text-center py-10 text-onSurfaceVariant">Tidak ada data.</div>`;
                         } else {
                             res.data.forEach(item => {
-                                // Create simple card for admin
                                 const el = document.createElement('div');
                                 el.className = "bg-surface p-4 rounded-xl border border-surfaceVariant shadow-sm";
                                 
@@ -763,7 +810,6 @@
                 const targetEl = document.getElementById(`view-${view}`);
                 if(targetEl) targetEl.classList.remove('hidden-view');
 
-                // Bottom Nav Logic
                 if (['dashboard', 'profile', 'monitor'].includes(view)) {
                     document.getElementById('bottom-nav').classList.remove('hidden-view');
                     this.updateNavHighlight(view);
@@ -808,7 +854,6 @@
                 if(!this.user) return;
                 const nameParts = this.user.nama.split(' ');
                 
-                // Dashboard Header
                 const dashName = document.getElementById('user-name');
                 if(dashName) dashName.innerText = nameParts[0];
                 const dashInit = document.getElementById('user-initial');
@@ -816,14 +861,12 @@
                 const dashSchool = document.getElementById('user-school');
                 if(dashSchool) dashSchool.innerText = this.user.sekolah;
                 
-                // Profile Page
                 document.getElementById('profile-name').innerText = this.user.nama;
                 document.getElementById('profile-initial').innerText = nameParts[0].charAt(0);
                 document.getElementById('profile-role').innerText = this.user.role || 'Guru';
                 document.getElementById('profile-nip').innerText = this.user.nip;
                 document.getElementById('profile-school').innerText = this.user.sekolah;
                 
-                // Print Layout
                 document.querySelectorAll('.print-name').forEach(el => el.innerText = this.user.nama);
                 document.querySelectorAll('.print-nip').forEach(el => el.innerText = this.user.nip);
                 document.querySelectorAll('.print-school').forEach(el => el.innerText = this.user.sekolah);
@@ -899,7 +942,7 @@
 
                     if (res.success) {
                         this.history = res.data;
-                        this.meta = res.meta || {}; // Store KS info
+                        this.meta = res.meta || {}; 
                         this.renderList(res.data);
                         if(this.currentTab === 'calendar') this.renderCalendar();
                         if(this.selectedDate) this.renderDayList(this.selectedDate);
@@ -924,7 +967,6 @@
                     if(res.success && res.data.length > 0) {
                         this.renderPrintTable(res.data);
                         
-                        // Set Metadata for Print
                         const ksName = res.meta?.ksName || "(Belum ada KS)";
                         const ksNip = res.meta?.ksNip || "-";
                         document.getElementById('print-ks-name').innerText = ksName;
@@ -932,7 +974,6 @@
                         document.getElementById('print-city').innerText = DEFAULT_CITY;
                         document.getElementById('print-date').innerText = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
-                        // Set Period Text for Print
                         const s = new Date(startDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
                         const e = new Date(endDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
                         document.querySelector('.print-period').innerText = `${s} s.d. ${e}`;
@@ -1000,9 +1041,10 @@
             viewImage: function(url) {
                 if(!url || !url.startsWith('http')) return;
                 
-                // HOTFIX: Patch legacy Drive UC links to Thumbnail links for better WebView support
+                // Patch URLs for better WebView compatibility
                 let finalUrl = url;
-                if(url.includes("drive.google.com/uc?")) {
+                // Patch drive.google.com/uc?id= to drive.google.com/thumbnail?id=&sz=w1000
+                if(url.includes("drive.google.com") && url.includes("id=")) {
                    try {
                        const idMatch = url.match(/id=([^&]+)/);
                        if(idMatch && idMatch[1]) {
@@ -1011,7 +1053,14 @@
                    } catch(e){}
                 }
 
-                document.getElementById('modal-img-display').src = finalUrl;
+                const imgEl = document.getElementById('modal-img-display');
+                // IMPORTANT: Reset src first to clear previous image state
+                imgEl.src = "";
+                imgEl.onerror = function() {
+                    // Fallback placeholder if image fails (CORS/Permissions)
+                    this.src = "https://via.placeholder.com/600x400?text=Gambar+Tidak+Dapat+Dimuat";
+                };
+                imgEl.src = finalUrl;
                 document.getElementById('modal-image').classList.remove('hidden-view');
             },
             
@@ -1102,7 +1151,6 @@
                 const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
                 const safeItem = encodeURIComponent(JSON.stringify(item));
                 
-                // Buttonized Image Icon for Viewing
                 let attachmentHtml = '';
                 if (item.fotoUrl && item.fotoUrl.startsWith('http')) {
                     attachmentHtml = `<button onclick="app.viewImage('${item.fotoUrl}')" class="text-primary hover:text-primaryContainer bg-surface p-1 rounded-full"><i data-lucide="image" width="16" height="16"></i></button>`;
@@ -1124,13 +1172,10 @@
                     el.className = "bg-surface p-0 rounded-[24px] border border-surfaceVariant/50 overflow-hidden flex flex-col hover:border-primary/50 transition duration-200 shadow-sm";
                     el.innerHTML = `
                         <div class="flex items-stretch">
-                            <!-- Date Column -->
                             <div class="w-16 bg-surfaceVariant/30 flex flex-col items-center justify-center border-r border-surfaceVariant/50 p-2">
                                 <span class="text-[10px] font-bold text-onSurfaceVariant uppercase">${dayName}</span>
                                 <span class="text-xl font-medium text-onSurface">${dateNum}</span>
                             </div>
-                            
-                            <!-- Content -->
                             <div class="flex-grow p-4 min-w-0">
                                 <div class="flex justify-between items-start mb-1">
                                     <span class="text-xs font-medium text-primary bg-primaryContainer/50 px-2 py-0.5 rounded-md">
@@ -1144,8 +1189,6 @@
                                 <p class="text-sm text-onSurfaceVariant line-clamp-2">${item.hasil}</p>
                             </div>
                         </div>
-                        
-                        <!-- Action Bar -->
                         <div class="bg-surfaceVariant/20 px-4 py-2 flex justify-end gap-3 border-t border-surfaceVariant/50">
                             <button onclick="app.editItem('${safeItem}')" class="text-xs font-medium text-primary hover:text-onPrimaryContainer uppercase tracking-wide flex items-center gap-1">
                                 <i data-lucide="pencil" width="12" height="12"></i> UBAH
@@ -1217,7 +1260,6 @@
                 document.getElementById('inp-id').value = "";
                 document.getElementById('existing-photo-url').value = "";
                 
-                // Manual formatting to ensure YYYY-MM-DD regardless of locale support in WebView
                 const now = new Date();
                 const yyyy = now.getFullYear();
                 const mm = String(now.getMonth() + 1).padStart(2, '0');
@@ -1233,7 +1275,6 @@
                 e.preventDefault();
                 this.toggleLoading(true);
                 
-                // Button Loading State
                 const btnSimpan = document.getElementById('btn-simpan-header');
                 const originalText = btnSimpan.innerHTML;
                 btnSimpan.innerHTML = `<i data-lucide="loader-2" class="animate-spin" width="16" height="16"></i> Menyimpan...`;
@@ -1261,7 +1302,6 @@
                     if(res.success) { this.navigate('dashboard'); } else { alert(res.message); }
                 } catch(e) { alert("Error saving"); }
                 
-                // Restore Button State
                 this.toggleLoading(false);
                 btnSimpan.innerHTML = originalText;
                 btnSimpan.disabled = false;
@@ -1294,16 +1334,20 @@
                 const file = e.target.files[0];
                 if (!file) return;
 
-                // Safety Check: size
                 if (file.size > 5 * 1024 * 1024) {
                     alert("Ukuran foto terlalu besar (Max 5MB).");
-                    e.target.value = ""; // reset input
+                    e.target.value = ""; 
                     return;
                 }
-
+                
+                // Show standard processing loading
+                this.processImageBlob(file);
+            },
+            
+            processImageBlob: function(blob) {
                 // FIX: Use ObjectURL for Instant Preview (Crash Prevention)
                 if (this.currentPreviewUrl) URL.revokeObjectURL(this.currentPreviewUrl);
-                const objectUrl = URL.createObjectURL(file);
+                const objectUrl = URL.createObjectURL(blob);
                 this.currentPreviewUrl = objectUrl;
                 document.getElementById('img-preview').src = objectUrl;
                 document.getElementById('preview-container').classList.remove('hidden-view');
@@ -1325,14 +1369,11 @@
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         
                         try {
-                            // Reduced quality to 0.4 for very small file size (<50KB)
                             const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
                             
                             document.getElementById('compressing-indicator').classList.add('hidden-view');
                             
                             this.currentPhotoBase64 = dataUrl;
-                            // NOTE: We do NOT set img-preview.src here to avoid Base64 DOM crash.
-                            // We keep using the ObjectURL for display.
                         } catch (err) {
                             alert("Gagal memproses gambar. Memori browser tidak cukup.");
                             this.clearImage();
@@ -1344,7 +1385,7 @@
                     }
                     img.src = event.target.result;
                 };
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(blob);
             },
 
             clearImage: function() {
@@ -1353,7 +1394,6 @@
                     URL.revokeObjectURL(this.currentPreviewUrl);
                     this.currentPreviewUrl = "";
                 }
-                document.getElementById('inp-foto-camera').value = "";
                 document.getElementById('inp-foto-gallery').value = "";
                 document.getElementById('existing-photo-url').value = "";
                 document.getElementById('preview-container').classList.add('hidden-view');
