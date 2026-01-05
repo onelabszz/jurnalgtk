@@ -579,13 +579,29 @@
                 try {
                     const constraints = { 
                         video: { 
-                            facingMode: this.facingMode 
+                            facingMode: this.facingMode,
+                            // Adding resolution constraints often fixes "dark" or "green" screens on Android WebViews
+                            // by forcing the hardware into a standard video mode.
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
                         } 
                     };
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     this.videoStream = stream;
                     const video = document.getElementById('camera-stream');
                     video.srcObject = stream;
+                    
+                    // Explicit play is required on some WebViews
+                    video.onloadedmetadata = () => {
+                        video.play();
+                    };
+                    
+                    // Handle mirroring for front camera
+                    if (this.facingMode === 'user') {
+                        video.style.transform = "scaleX(-1)";
+                    } else {
+                        video.style.transform = "scaleX(1)";
+                    }
                 } catch (err) {
                     alert("Gagal membuka kamera. Pastikan izin kamera diberikan.");
                     console.error(err);
