@@ -520,7 +520,9 @@
 
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
-        const DEFAULT_CITY = "Jakarta"; 
+        
+        // City will be updated by fetchRefs
+        let APP_CITY = "Jakarta";
 
         const app = {
             user: null,
@@ -711,6 +713,7 @@
                     if(res.success) {
                         this.refs.kegiatan = res.kegiatan || [];
                         this.refs.hasil = res.hasil || [];
+                        if(res.city) APP_CITY = res.city;
                     }
                 } catch(e) { console.error("Err fetch ref"); }
             },
@@ -1057,7 +1060,7 @@
                         const ksNip = res.meta?.ksNip || "-";
                         document.getElementById('print-ks-name').innerText = ksName;
                         document.getElementById('print-ks-nip').innerText = ksNip;
-                        document.getElementById('print-city').innerText = DEFAULT_CITY;
+                        document.getElementById('print-city').innerText = APP_CITY;
                         document.getElementById('print-date').innerText = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
                         const s = new Date(startDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
