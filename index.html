@@ -51,7 +51,8 @@
       BookOpen, Calendar, Camera, ChevronDown, ChevronUp, ChevronRight, ChevronLeft,
       Clock, LogOut, Plus, Save, User, CheckCircle2, 
       Home, BarChart2, Settings, FileText, Bell, Loader2, Link, Printer, Database,
-      Mic, Pencil, Trash2, X, FileSpreadsheet, LayoutGrid, List, Image
+      Mic, Pencil, Trash2, X, FileSpreadsheet, LayoutGrid, List, Image, Users, KeyRound, School,
+      TrendingUp, ListChecks
     } from 'lucide-react';
 
     // --- KONFIGURASI PENTING ---
@@ -104,7 +105,16 @@
 
       useEffect(() => {
         const savedUser = localStorage.getItem('jurnal_user');
-        if (savedUser) { setUser(JSON.parse(savedUser)); setView('main'); }
+        if (savedUser) { 
+          const u = JSON.parse(savedUser);
+          setUser(u);
+          // Cek Role
+          if (u.role === 'Kepala Sekolah' || u.role === 'Admin') {
+            setView('admin');
+          } else {
+            setView('main'); 
+          }
+        }
         fetchReferenceData();
       }, []);
 
@@ -122,7 +132,16 @@
         }
       };
 
-      const handleLogin = (u) => { setUser(u); localStorage.setItem('jurnal_user', JSON.stringify(u)); setView('main'); };
+      const handleLogin = (u) => { 
+        setUser(u); 
+        localStorage.setItem('jurnal_user', JSON.stringify(u));
+        if (u.role === 'Kepala Sekolah' || u.role === 'Admin') {
+          setView('admin');
+        } else {
+          setView('main'); 
+        }
+      };
+
       const handleLogout = () => { setUser(null); localStorage.removeItem('jurnal_user'); setView('login'); };
       
       const handleSaveSuccess = (entry) => { 
@@ -181,6 +200,15 @@
               isLoadingRef={isLoadingRef}
             />
           )}
+
+          {view === 'admin' && user && (
+            <AdminDashboard 
+              user={user}
+              onLogout={handleLogout}
+              defaultRefKegiatan={suggestionsKegiatan}
+              defaultRefHasil={suggestionsHasil}
+            />
+          )}
         </div>
       );
     }
@@ -212,7 +240,221 @@
       );
     }
 
-    // --- COMPONENT: CALENDAR VIEW ---
+    // --- ADMIN DASHBOARD ---
+    function AdminDashboard({ user, onLogout, defaultRefKegiatan, defaultRefHasil }) {
+      const [activeTab, setActiveTab] = useState('stats'); // stats, users, refs
+      
+      return (
+        <div className="h-full flex flex-col bg-gray-50">
+          <div className="bg-gray-900 text-white px-6 pt-10 pb-6 shadow-sm z-10 sticky top-0">
+             <div className="flex justify-between items-center mb-4">
+                <div>
+                   <h2 className="text-xl font-bold">Admin Panel</h2>
+                   <p className="text-xs text-gray-400">{user.nama}</p>
+                </div>
+                <button onClick={onLogout} className="bg-red-600 p-2 rounded-lg text-white hover:bg-red-700"><LogOut size={16} /></button>
+             </div>
+             <div className="flex gap-2">
+               <button onClick={() => setActiveTab('stats')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${activeTab === 'stats' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Statistik</button>
+               <button onClick={() => setActiveTab('users')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${activeTab === 'users' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Guru</button>
+               <button onClick={() => setActiveTab('refs')} className={`flex-1 py-2 text-xs font-bold rounded-lg ${activeTab === 'refs' ? 'bg-blue-600 text-white' : 'bg-gray-800 text-gray-400'}`}>Referensi</button>
+             </div>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto p-4 pb-20">
+             {activeTab === 'stats' && <AdminStats />}
+             {activeTab === 'users' && <AdminUsers />}
+             {activeTab === 'refs' && <AdminRefs defaultKegiatan={defaultRefKegiatan} defaultHasil={defaultRefHasil} />}
+          </div>
+        </div>
+      );
+    }
+
+    function AdminStats() {
+      const [stats, setStats] = useState([]);
+      const [loading, setLoading] = useState(false);
+
+      useEffect(() => {
+        loadStats();
+      }, []);
+
+      const loadStats = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_stats' }) });
+          const json = await res.json();
+          if (json.success) setStats(json.stats);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+      };
+
+      return (
+         <div className="space-y-4">
+            <h3 className="font-bold text-gray-700 flex items-center gap-2"><TrendingUp size={18} /> Keaktifan Guru (Total Jurnal)</h3>
+            {loading ? <div className="text-center py-4"><Loader2 className="animate-spin inline mr-2"/> Loading...</div> : (
+              <div className="space-y-3">
+                {stats.length === 0 ? <p className="text-gray-400 text-sm italic">Belum ada data jurnal.</p> : stats.map((item, idx) => (
+                  <div key={idx} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm flex items-center gap-3">
+                     <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-xs">{idx+1}</div>
+                     <div className="flex-1">
+                        <p className="text-sm font-bold text-gray-800">{item.name}</p>
+                        <div className="w-full bg-gray-100 rounded-full h-1.5 mt-1">
+                           <div className="bg-blue-500 h-1.5 rounded-full" style={{ width: `${Math.min(100, (item.count/stats[0].count)*100)}%` }}></div>
+                        </div>
+                     </div>
+                     <span className="text-lg font-bold text-blue-600">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+         </div>
+      );
+    }
+
+    function AdminUsers() {
+      const [users, setUsers] = useState([]);
+      const [loading, setLoading] = useState(false);
+      const [showForm, setShowForm] = useState(false);
+      const [formData, setFormData] = useState({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' });
+      const [isEditing, setIsEditing] = useState(false);
+
+      useEffect(() => { loadUsers(); }, []);
+
+      const loadUsers = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_get_users' }) });
+          const json = await res.json();
+          if (json.success) setUsers(json.users);
+        } catch(e) { console.error(e); } finally { setLoading(false); }
+      };
+
+      const handleEdit = (u) => { setFormData(u); setIsEditing(true); setShowForm(true); };
+      const handleAdd = () => { setFormData({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); setIsEditing(false); setShowForm(true); };
+
+      const handleSave = async () => {
+        if (!formData.nip || !formData.nama || !formData.pin) return alert("Mohon lengkapi data");
+        setLoading(true);
+        try {
+           const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_user', user: formData }) });
+           const json = await res.json();
+           if (json.success) { setShowForm(false); loadUsers(); } else { alert(json.message); }
+        } catch(e) { alert("Gagal menyimpan"); } finally { setLoading(false); }
+      };
+
+      const handleDelete = async (nip) => {
+        if (!confirm("Hapus guru ini?")) return;
+        setLoading(true);
+        try {
+           const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_delete_user', nip }) });
+           const json = await res.json();
+           if (json.success) loadUsers(); else alert(json.message);
+        } catch(e) { alert("Gagal menghapus"); } finally { setLoading(false); }
+      };
+
+      return (
+         <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="font-bold text-gray-700 flex items-center gap-2"><Users size={18} /> Daftar Guru</h3>
+              <button onClick={handleAdd} className="bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1"><Plus size={14} /> Tambah</button>
+            </div>
+            
+            {showForm && (
+              <div className="bg-white p-4 rounded-xl border border-blue-200 shadow-lg mb-4 animate-in slide-in-from-top-2">
+                 <h4 className="font-bold mb-3 text-sm">{isEditing ? 'Edit Guru' : 'Tambah Guru Baru'}</h4>
+                 <div className="grid gap-3">
+                    <input className="border p-2 rounded text-sm" placeholder="NIP (Nomor Induk)" value={formData.nip} onChange={e=>setFormData({...formData, nip: e.target.value})} disabled={isEditing} />
+                    <input className="border p-2 rounded text-sm" placeholder="Nama Lengkap" value={formData.nama} onChange={e=>setFormData({...formData, nama: e.target.value})} />
+                    <input className="border p-2 rounded text-sm" placeholder="PIN Login" value={formData.pin} onChange={e=>setFormData({...formData, pin: e.target.value})} />
+                    <select className="border p-2 rounded text-sm" value={formData.role} onChange={e=>setFormData({...formData, role: e.target.value})}>
+                       <option>Guru Mapel</option><option>Wali Kelas</option><option>Kepala Sekolah</option><option>Admin</option>
+                    </select>
+                    <input className="border p-2 rounded text-sm" placeholder="Nama Sekolah" value={formData.sekolah} onChange={e=>setFormData({...formData, sekolah: e.target.value})} />
+                    <div className="flex gap-2 mt-2">
+                       <button onClick={handleSave} className="bg-blue-600 text-white px-4 py-2 rounded text-sm font-bold flex-1">{loading ? '...' : 'Simpan'}</button>
+                       <button onClick={()=>setShowForm(false)} className="bg-gray-200 text-gray-600 px-4 py-2 rounded text-sm font-bold">Batal</button>
+                    </div>
+                 </div>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {users.map((u, i) => (
+                <div key={i} className="bg-white p-3 rounded-lg border border-gray-100 flex justify-between items-center shadow-sm">
+                   <div>
+                      <p className="font-bold text-sm text-gray-800">{u.nama}</p>
+                      <p className="text-xs text-gray-500">{u.nip} • {u.role}</p>
+                      <p className="text-[10px] bg-gray-100 inline-block px-1 rounded text-gray-500 mt-1">PIN: {u.pin}</p>
+                   </div>
+                   <div className="flex gap-2">
+                      <button onClick={()=>handleEdit(u)} className="p-2 bg-blue-50 text-blue-600 rounded-lg"><Pencil size={14}/></button>
+                      <button onClick={()=>handleDelete(u.nip)} className="p-2 bg-red-50 text-red-600 rounded-lg"><Trash2 size={14}/></button>
+                   </div>
+                </div>
+              ))}
+            </div>
+         </div>
+      );
+    }
+
+    function AdminRefs({ defaultKegiatan, defaultHasil }) {
+       const [kegiatan, setKegiatan] = useState(defaultKegiatan);
+       const [hasil, setHasil] = useState(defaultHasil);
+       const [tempItem, setTempItem] = useState("");
+       const [activeSection, setActiveSection] = useState('kegiatan');
+       const [loading, setLoading] = useState(false);
+
+       const handleAdd = () => {
+         if (!tempItem) return;
+         if (activeSection === 'kegiatan') setKegiatan([...kegiatan, tempItem]);
+         else setHasil([...hasil, tempItem]);
+         setTempItem("");
+       };
+
+       const handleDelete = (idx) => {
+         if (activeSection === 'kegiatan') setKegiatan(kegiatan.filter((_, i) => i !== idx));
+         else setHasil(hasil.filter((_, i) => i !== idx));
+       };
+
+       const handleSave = async () => {
+         setLoading(true);
+         try {
+           // Save Kegiatan
+           await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'kegiatan', items: kegiatan }) });
+           // Save Hasil
+           await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'hasil', items: hasil }) });
+           alert("Referensi berhasil disimpan!");
+         } catch(e) { alert("Gagal menyimpan"); } finally { setLoading(false); }
+       };
+
+       return (
+         <div className="space-y-4">
+             <div className="flex gap-2 mb-4">
+                <button onClick={()=>setActiveSection('kegiatan')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'kegiatan' ? 'bg-blue-50 border-blue-200 text-blue-600' : 'border-gray-200 text-gray-500'}`}>Daftar Kegiatan</button>
+                <button onClick={()=>setActiveSection('hasil')} className={`flex-1 py-1.5 text-xs font-bold rounded border ${activeSection === 'hasil' ? 'bg-green-50 border-green-200 text-green-600' : 'border-gray-200 text-gray-500'}`}>Daftar Hasil</button>
+             </div>
+             
+             <div className="flex gap-2">
+                <input className="flex-1 border p-2 rounded text-sm" placeholder="Tambah item baru..." value={tempItem} onChange={e=>setTempItem(e.target.value)} />
+                <button onClick={handleAdd} className="bg-gray-800 text-white px-3 rounded"><Plus size={16} /></button>
+             </div>
+
+             <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+                {(activeSection === 'kegiatan' ? kegiatan : hasil).map((item, i) => (
+                  <div key={i} className="p-3 border-b border-gray-50 flex justify-between items-center text-sm text-gray-700">
+                     <span>{item}</span>
+                     <button onClick={()=>handleDelete(i)} className="text-red-400 hover:text-red-600"><X size={14}/></button>
+                  </div>
+                ))}
+             </div>
+             
+             <button onClick={handleSave} disabled={loading} className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg hover:bg-blue-700 disabled:bg-gray-400">
+                {loading ? 'Menyimpan...' : 'Simpan Perubahan Ke Server'}
+             </button>
+         </div>
+       );
+    }
+
+    // --- CALENDAR VIEW ---
     function CalendarView({ entries, onSelectDate, selectedDate }) {
       const [currentMonth, setCurrentMonth] = useState(new Date());
 
