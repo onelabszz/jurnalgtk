@@ -141,8 +141,17 @@
         <p class="text-onSurfaceVariant font-medium tracking-wide">Memproses data...</p>
     </div>
 
+    <!-- Image Modal Viewer -->
+    <div id="modal-image" class="hidden-view fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4">
+        <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white z-20">
+            <i data-lucide="x" width="24" height="24"></i>
+        </button>
+        <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl">
+        <p class="text-white/70 mt-4 text-sm">Dokumentasi Kegiatan</p>
+    </div>
+
     <!-- VIEW: LOGIN -->
-    <div id="view-login" class="min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
+    <div id="view-login" class="no-print min-h-screen flex flex-col items-center justify-center p-6 bg-surface relative overflow-hidden">
         <!-- Orange Gradient Decoration -->
         <div class="absolute top-[-10%] right-[-10%] w-64 h-64 bg-primaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
         <div class="absolute bottom-[-10%] left-[-10%] w-80 h-80 bg-secondaryContainer rounded-full blur-[80px] opacity-60 pointer-events-none"></div>
@@ -179,26 +188,25 @@
     </div>
 
     <!-- VIEW: DASHBOARD -->
-    <div id="view-dashboard" class="hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col">
+    <div id="view-dashboard" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col">
         <!-- Top Bar -->
-        <div class="no-print pt-4 pb-2 flex justify-between items-center bg-surface sticky top-0 z-30">
+        <div class="pt-4 pb-2 flex justify-between items-center bg-surface sticky top-0 z-30">
             <div class="w-10 h-10 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center font-bold text-lg">
                 <span id="user-initial">G</span>
             </div>
             <span class="text-lg font-medium text-onSurface">Jurnal Guru</span>
-            <button onclick="window.print()" class="w-10 h-10 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant transition">
-                <i data-lucide="printer" width="24" height="24"></i>
-            </button>
+            <!-- Print button moved to Profile -->
+            <div class="w-10 h-10"></div> 
         </div>
 
         <!-- Greeting Area -->
-        <div class="no-print py-6">
+        <div class="py-6">
             <h1 class="text-3xl font-normal text-onSurface">Halo, <span id="user-name" class="font-medium">Guru</span></h1>
             <p class="text-onSurfaceVariant mt-1" id="user-school">Unit Kerja</p>
         </div>
         
         <!-- Filter Chips (Horizontal Scroll) -->
-        <div class="no-print flex gap-3 overflow-x-auto hide-scroll mb-6 pb-2">
+        <div class="flex gap-3 overflow-x-auto hide-scroll mb-6 pb-2">
             <div class="relative min-w-[140px]">
                 <select id="filter-month" class="w-full appearance-none bg-surfaceVariant text-onSurfaceVariant pl-4 pr-10 py-2 rounded-lg text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"></select>
                 <i data-lucide="chevron-down" width="16" height="16" class="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-onSurfaceVariant"></i>
@@ -212,14 +220,14 @@
         <!-- Content Area -->
         <div class="flex-grow">
             <!-- List View -->
-            <div id="tab-content-list" class="no-print">
+            <div id="tab-content-list">
                  <div id="dashboard-list" class="space-y-3">
                      <!-- Items injected here by JS -->
                  </div>
             </div>
 
             <!-- Calendar View -->
-            <div id="tab-content-calendar" class="no-print hidden-view">
+            <div id="tab-content-calendar" class="hidden-view">
                 <div class="bg-surfaceVariant/30 p-6 rounded-[28px] mb-6 border border-surfaceVariant/20">
                     <div class="grid grid-cols-7 mb-4 text-center text-sm font-medium text-onSurfaceVariant">
                         <div>M</div><div>S</div><div>S</div><div>R</div><div>K</div><div>J</div><div>S</div>
@@ -247,48 +255,84 @@
                 <p class="text-onSurfaceVariant text-sm max-w-[200px]">Belum ada jurnal untuk periode ini.</p>
             </div>
         </template>
+    </div>
 
-        <!-- Print View -->
-        <div class="print-only">
-            <!-- (Same Print Layout - Professional Table) -->
-            <div class="text-center border-b-2 border-black pb-4 mb-6">
-                <h2 class="font-bold text-xl uppercase tracking-wide">Laporan Kinerja Harian Guru</h2>
+    <!-- VIEW: PROFILE -->
+    <div id="view-profile" class="no-print hidden-view pb-28 px-4 max-w-2xl mx-auto min-h-screen flex flex-col bg-surface">
+         <!-- Top Bar -->
+         <div class="pt-4 pb-2 flex justify-center items-center bg-surface sticky top-0 z-30">
+            <span class="text-lg font-medium text-onSurface">Profil Guru</span>
+        </div>
+
+        <div class="flex flex-col items-center py-8">
+            <div class="w-24 h-24 rounded-full bg-primaryContainer text-onPrimaryContainer flex items-center justify-center font-bold text-4xl mb-4 shadow-sm border-4 border-surface">
+                <span id="profile-initial">G</span>
             </div>
-            <div class="mb-6 text-sm grid grid-cols-2 gap-x-8 gap-y-1">
-                <p><span class="inline-block w-24 font-bold">Nama</span>: <span class="print-name"></span></p>
-                <p><span class="inline-block w-24 font-bold">Bulan</span>: <span class="print-month"></span></p>
-                <p><span class="inline-block w-24 font-bold">NIP</span>: <span class="print-nip"></span></p>
-                <p><span class="inline-block w-24 font-bold">Unit Kerja</span>: <span class="print-school"></span></p>
-            </div>
-            <table class="w-full mb-8">
-                <thead>
-                    <tr>
-                        <th style="width: 5%">No</th>
-                        <th style="width: 15%">Hari/Tanggal</th>
-                        <th style="width: 15%">Waktu</th>
-                        <th style="width: 40%">Uraian Kegiatan</th>
-                        <th style="width: 25%">Hasil / Output</th>
-                    </tr>
-                </thead>
-                <tbody id="print-table-body"></tbody>
-            </table>
-            <div class="mt-16 flex justify-between px-8 page-break">
-                <div class="text-center w-64">
-                    <p class="mb-20">Mengetahui,<br/>Kepala Sekolah</p>
-                    <p class="font-bold underline mb-1">(...................................)</p>
-                    <p class="text-xs">NIP. ..........................</p>
-                </div>
-                <div class="text-center w-64">
-                    <p class="mb-20">Guru Yang Bersangkutan</p>
-                    <p class="font-bold underline print-name mb-1"></p>
-                    <p class="print-nip-prefix text-xs">NIP. <span class="print-nip"></span></p>
+            <h2 class="text-2xl font-normal text-onSurface text-center px-4" id="profile-name">Nama Guru</h2>
+            <div class="mt-2 px-3 py-1 bg-surfaceVariant rounded-full text-onSurfaceVariant text-sm font-medium" id="profile-role">Guru</div>
+        </div>
+
+        <div class="space-y-4 w-full">
+            <!-- Info Card -->
+            <div class="bg-surfaceVariant/30 p-5 rounded-[24px] border border-surfaceVariant/50">
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs font-bold text-secondary uppercase tracking-wider">NIP</label>
+                        <p class="text-lg text-onSurface" id="profile-nip">-</p>
+                    </div>
+                    <div class="h-px bg-surfaceVariant/50"></div>
+                    <div>
+                        <label class="text-xs font-bold text-secondary uppercase tracking-wider">Unit Kerja</label>
+                        <p class="text-lg text-onSurface" id="profile-school">-</p>
+                    </div>
                 </div>
             </div>
+
+            <!-- Report Card -->
+            <div class="bg-surface p-5 rounded-[24px] border border-outline/30 shadow-sm">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-secondaryContainer flex items-center justify-center text-onSecondaryContainer">
+                        <i data-lucide="printer" width="20" height="20"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-onSurface">Laporan Kinerja</h3>
+                        <p class="text-xs text-onSurfaceVariant">Cetak atau Unduh Data</p>
+                    </div>
+                </div>
+                
+                <!-- Date Range Inputs -->
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="relative">
+                        <label class="text-[10px] uppercase font-bold text-secondary mb-1 block">Dari</label>
+                        <input type="date" id="report-start" class="w-full px-3 py-2 bg-surfaceVariant/30 border border-outline/30 rounded-lg text-sm text-onSurface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                    </div>
+                    <div class="relative">
+                        <label class="text-[10px] uppercase font-bold text-secondary mb-1 block">Sampai</label>
+                        <input type="date" id="report-end" class="w-full px-3 py-2 bg-surfaceVariant/30 border border-outline/30 rounded-lg text-sm text-onSurface focus:border-primary focus:ring-1 focus:ring-primary outline-none transition">
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                     <button onclick="app.printReport()" class="flex-1 py-3 bg-primary text-onPrimary rounded-full font-medium text-sm shadow hover:shadow-lg transition flex items-center justify-center gap-2">
+                        <i data-lucide="file-text" width="16" height="16"></i> PDF
+                    </button>
+                    <button onclick="app.downloadExcel()" class="flex-1 py-3 bg-primaryContainer text-onPrimaryContainer border border-primary/10 rounded-full font-medium text-sm shadow-sm hover:shadow transition flex items-center justify-center gap-2">
+                        <i data-lucide="sheet" width="16" height="16"></i> Excel
+                    </button>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <button onclick="app.logout()" class="w-full py-4 mt-4 text-error font-medium bg-error/5 rounded-full hover:bg-error/10 transition border border-error/10 flex items-center justify-center gap-2">
+                <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
+            </button>
+            
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.3.0 (Fixed Cam)</p>
         </div>
     </div>
 
     <!-- VIEW: FORM -->
-    <div id="view-form" class="hidden-view bg-surface min-h-screen relative z-50">
+    <div id="view-form" class="no-print hidden-view bg-surface min-h-screen relative z-50">
         <!-- Form Header (Top App Bar) -->
         <div class="sticky top-0 bg-surface z-20 px-4 py-4 flex items-center gap-4 border-b border-surfaceVariant/50">
             <button onclick="app.navigate('dashboard')" class="w-10 h-10 rounded-full hover:bg-surfaceVariant flex items-center justify-center text-onSurfaceVariant transition">
@@ -355,16 +399,22 @@
                 <label class="text-sm font-bold text-secondary uppercase tracking-wider block mb-3">Dokumentasi</label>
                 <div class="flex flex-col gap-4">
                     <div class="flex gap-3">
-                        <button type="button" onclick="document.getElementById('inp-foto-camera').click()" class="flex-1 py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant hover:bg-surfaceVariant transition flex items-center justify-center gap-2">
-                            <i data-lucide="camera" width="20" height="20"></i> Kamera
-                        </button>
-                        <button type="button" onclick="document.getElementById('inp-foto-gallery').click()" class="flex-1 py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant hover:bg-surfaceVariant transition flex items-center justify-center gap-2">
-                            <i data-lucide="image" width="20" height="20"></i> Galeri
-                        </button>
+                        <!-- FIX: Gunakan Label sebagai pembungkus Input agar trigger native camera bekerja -->
+                        <label class="flex-1 relative cursor-pointer group">
+                             <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
+                                <i data-lucide="camera" width="20" height="20"></i> Kamera
+                             </div>
+                             <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        </label>
+                        
+                        <label class="flex-1 relative cursor-pointer group">
+                            <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
+                                <i data-lucide="image" width="20" height="20"></i> Galeri
+                            </div>
+                            <input type="file" id="inp-foto-gallery" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                        </label>
                     </div>
 
-                    <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="hidden">
-                    <input type="file" id="inp-foto-gallery" accept="image/*" class="hidden">
                     
                     <div id="compressing-indicator" class="hidden-view p-3 bg-secondaryContainer text-onSecondaryContainer rounded-lg text-xs flex items-center justify-center gap-2">
                         <i data-lucide="loader" class="animate-spin" width="14" height="14"></i> Mengompres foto...
@@ -388,7 +438,7 @@
     <!-- MD3 BOTTOM NAVIGATION BAR -->
     <nav id="bottom-nav" class="no-print hidden-view fixed bottom-0 left-0 right-0 h-[80px] bg-surface border-t border-surfaceVariant/50 flex justify-evenly items-center z-40 max-w-2xl mx-auto">
         <!-- Tab: List -->
-        <button onclick="app.switchTab('list')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="list">
+        <button onclick="app.navigate('dashboard')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="dashboard">
             <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
                 <i data-lucide="layout-list" width="24" height="24"></i>
             </div>
@@ -410,14 +460,52 @@
             </button>
         </div>
 
-        <!-- Logout -->
-        <button onclick="app.logout()" class="nav-item group flex flex-col items-center gap-1 w-20 text-onSurfaceVariant">
-            <div class="w-16 h-8 rounded-full flex items-center justify-center">
-                <i data-lucide="log-out" width="24" height="24"></i>
+        <!-- Tab: Profile (Replaces Logout) -->
+        <button onclick="app.navigate('profile')" class="nav-item group flex flex-col items-center gap-1 w-20" data-target="profile">
+            <div class="nav-indicator w-16 h-8 rounded-full flex items-center justify-center transition-colors duration-300">
+                <i data-lucide="user" width="24" height="24"></i>
             </div>
-            <span class="text-xs font-medium">Keluar</span>
+            <span class="text-xs font-medium text-onSurfaceVariant group-hover:text-onSurface">Profil</span>
         </button>
     </nav>
+    
+    <!-- Print View Container (Moved outside specific views) -->
+    <div class="print-only">
+        <!-- Professional Table Layout -->
+        <div class="text-center border-b-2 border-black pb-4 mb-6">
+            <h2 class="font-bold text-xl uppercase tracking-wide">Laporan Kinerja Harian Guru</h2>
+        </div>
+        <div class="mb-6 text-sm grid grid-cols-2 gap-x-8 gap-y-1">
+            <p><span class="inline-block w-24 font-bold">Nama</span>: <span class="print-name"></span></p>
+            <p><span class="inline-block w-24 font-bold">Periode</span>: <span class="print-period"></span></p>
+            <p><span class="inline-block w-24 font-bold">NIP</span>: <span class="print-nip"></span></p>
+            <p><span class="inline-block w-24 font-bold">Unit Kerja</span>: <span class="print-school"></span></p>
+        </div>
+        <table class="w-full mb-8">
+            <thead>
+                <tr>
+                    <th style="width: 5%">No</th>
+                    <th style="width: 15%">Hari/Tanggal</th>
+                    <th style="width: 15%">Waktu</th>
+                    <th style="width: 40%">Uraian Kegiatan</th>
+                    <th style="width: 25%">Hasil / Output</th>
+                </tr>
+            </thead>
+            <tbody id="print-table-body"></tbody>
+        </table>
+        <div class="mt-16 flex justify-between px-8 page-break">
+            <div class="text-center w-64">
+                <p class="mb-20">Mengetahui,<br/>Kepala Sekolah</p>
+                <p class="font-bold underline mb-1">(...................................)</p>
+                <p class="text-xs">NIP. ..........................</p>
+            </div>
+            <div class="text-center w-64">
+                <p class="mb-20">Guru Yang Bersangkutan</p>
+                <p class="font-bold underline print-name mb-1"></p>
+                <p class="print-nip-prefix text-xs">NIP. <span class="print-nip"></span></p>
+            </div>
+        </div>
+    </div>
 
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
@@ -439,7 +527,14 @@
                     this.navigate('login');
                 }
                 
-                this.initFilters();
+                // Init Dashboard Filters
+                this.initFilters('filter-month', 'filter-year');
+                
+                // Init Report Date Defaults (Start of Month -> Today)
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                document.getElementById('report-start').value = firstDay.toISOString().split('T')[0];
+                document.getElementById('report-end').value = today.toISOString().split('T')[0];
 
                 document.getElementById('form-login').addEventListener('submit', (e) => this.handleLogin(e));
                 document.getElementById('form-jurnal').addEventListener('submit', (e) => this.handleSave(e));
@@ -449,9 +544,10 @@
                 lucide.createIcons();
             },
             
-            initFilters: function() {
-                const selMonth = document.getElementById('filter-month');
+            initFilters: function(monthId, yearId) {
+                const selMonth = document.getElementById(monthId);
                 const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                selMonth.innerHTML = ''; 
                 months.forEach((m, i) => {
                     const opt = document.createElement('option');
                     opt.value = i + 1;
@@ -461,8 +557,9 @@
                 });
                 selMonth.addEventListener('change', () => this.fetchHistory());
 
-                const selYear = document.getElementById('filter-year');
+                const selYear = document.getElementById(yearId);
                 const currentYear = new Date().getFullYear();
+                selYear.innerHTML = '';
                 for (let i = currentYear - 1; i <= currentYear + 1; i++) {
                     const opt = document.createElement('option');
                     opt.value = i;
@@ -478,32 +575,74 @@
             },
 
             navigate: function(view) {
-                document.getElementById('view-login').classList.add('hidden-view');
-                document.getElementById('view-dashboard').classList.add('hidden-view');
-                document.getElementById('view-form').classList.add('hidden-view');
+                const views = ['login', 'dashboard', 'form', 'profile'];
+                views.forEach(v => document.getElementById(`view-${v}`).classList.add('hidden-view'));
+                
                 document.getElementById('bottom-nav').classList.add('hidden-view');
 
                 document.getElementById(`view-${view}`).classList.remove('hidden-view');
 
-                if (view === 'dashboard') {
+                // Bottom Nav Logic
+                if (['dashboard', 'profile'].includes(view)) {
                     document.getElementById('bottom-nav').classList.remove('hidden-view');
+                    this.updateNavHighlight(view);
+                }
+
+                if (view === 'dashboard') {
                     this.updateUserInfo();
+                    // Always fetch dashboard history (month/year) when entering
                     this.fetchHistory();
                     this.switchTab(this.currentTab);
                 }
+                
+                if (view === 'profile') {
+                    this.updateUserInfo();
+                }
+
                 if (view === 'form') {
                     if(!document.getElementById('inp-tanggal').value) this.resetForm();
                 }
                 lucide.createIcons();
             },
 
+            updateNavHighlight: function(target) {
+                document.querySelectorAll('.nav-indicator').forEach(el => {
+                    el.classList.remove('bg-secondaryContainer', 'text-onSecondaryContainer');
+                    el.classList.add('text-onSurfaceVariant');
+                });
+                
+                let selector = `[data-target="${target}"]`;
+                if (target === 'dashboard') {
+                   selector = `[data-target="${this.currentTab === 'list' ? 'dashboard' : 'calendar'}"]`;
+                }
+
+                const activeBtn = document.querySelector(`${selector} .nav-indicator`);
+                if(activeBtn) {
+                    activeBtn.classList.add('bg-secondaryContainer', 'text-onSecondaryContainer');
+                    activeBtn.classList.remove('text-onSurfaceVariant');
+                }
+            },
+
             updateUserInfo: function() {
                 if(!this.user) return;
                 const nameParts = this.user.nama.split(' ');
-                document.getElementById('user-name').innerText = nameParts[0];
-                document.getElementById('user-initial').innerText = nameParts[0].charAt(0);
-                document.getElementById('user-school').innerText = this.user.sekolah;
                 
+                // Dashboard Header
+                const dashName = document.getElementById('user-name');
+                if(dashName) dashName.innerText = nameParts[0];
+                const dashInit = document.getElementById('user-initial');
+                if(dashInit) dashInit.innerText = nameParts[0].charAt(0);
+                const dashSchool = document.getElementById('user-school');
+                if(dashSchool) dashSchool.innerText = this.user.sekolah;
+                
+                // Profile Page
+                document.getElementById('profile-name').innerText = this.user.nama;
+                document.getElementById('profile-initial').innerText = nameParts[0].charAt(0);
+                document.getElementById('profile-role').innerText = this.user.role || 'Guru';
+                document.getElementById('profile-nip').innerText = this.user.nip;
+                document.getElementById('profile-school').innerText = this.user.sekolah;
+                
+                // Print Layout
                 document.querySelectorAll('.print-name').forEach(el => el.innerText = this.user.nama);
                 document.querySelectorAll('.print-nip').forEach(el => el.innerText = this.user.nip);
                 document.querySelectorAll('.print-school').forEach(el => el.innerText = this.user.sekolah);
@@ -514,17 +653,12 @@
                 const contentCal = document.getElementById('tab-content-calendar');
                 const contentList = document.getElementById('tab-content-list');
                 
-                // Update Indicators in Bottom Nav
-                document.querySelectorAll('.nav-indicator').forEach(el => {
-                    el.classList.remove('bg-secondaryContainer', 'text-onSecondaryContainer');
-                    el.classList.add('text-onSurfaceVariant');
-                });
-                
-                const activeBtn = document.querySelector(`[data-target="${tabName}"] .nav-indicator`);
-                if(activeBtn) {
-                    activeBtn.classList.add('bg-secondaryContainer', 'text-onSecondaryContainer');
-                    activeBtn.classList.remove('text-onSurfaceVariant');
+                const dashView = document.getElementById('view-dashboard');
+                if (dashView.classList.contains('hidden-view')) {
+                     this.navigate('dashboard');
                 }
+
+                this.updateNavHighlight('dashboard');
 
                 if (tabName === 'calendar') {
                     contentCal.classList.remove('hidden-view');
@@ -572,8 +706,6 @@
                 this.toggleLoading(true);
                 const month = parseInt(document.getElementById('filter-month').value);
                 const year = parseInt(document.getElementById('filter-year').value);
-                const monthName = document.getElementById('filter-month').options[document.getElementById('filter-month').selectedIndex].text;
-                document.querySelector('.print-month').innerText = `${monthName} ${year}`;
 
                 try {
                     const res = await fetch(APPS_SCRIPT_URL, {
@@ -584,12 +716,103 @@
                     if (res.success) {
                         this.history = res.data;
                         this.renderList(res.data);
-                        this.renderPrintTable(res.data);
                         if(this.currentTab === 'calendar') this.renderCalendar();
                         if(this.selectedDate) this.renderDayList(this.selectedDate);
                     }
                 } catch(e) { console.error(e); }
                 this.toggleLoading(false);
+            },
+            
+            printReport: async function() {
+                 if(!this.user) return;
+                 const startDate = document.getElementById('report-start').value;
+                 const endDate = document.getElementById('report-end').value;
+                 if(!startDate || !endDate) { alert("Pilih tanggal awal dan akhir."); return; }
+                 
+                 this.toggleLoading(true);
+                 try {
+                    const res = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'read_history', nip: this.user.nip, startDate, endDate })
+                    }).then(r => r.json());
+                    
+                    if(res.success && res.data.length > 0) {
+                        this.renderPrintTable(res.data);
+                        
+                        // Set Period Text for Print
+                        const s = new Date(startDate).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+                        const e = new Date(endDate).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'});
+                        document.querySelector('.print-period').innerText = `${s} s/d ${e}`;
+                        
+                        this.toggleLoading(false);
+                        setTimeout(() => window.print(), 300);
+                    } else {
+                        this.toggleLoading(false);
+                        alert("Tidak ada data dalam rentang tanggal tersebut.");
+                    }
+                 } catch(e) {
+                     this.toggleLoading(false);
+                     alert("Gagal memuat data laporan.");
+                 }
+            },
+
+            downloadExcel: async function() {
+                if(!this.user) return;
+                const startDate = document.getElementById('report-start').value;
+                const endDate = document.getElementById('report-end').value;
+                if(!startDate || !endDate) { alert("Pilih tanggal awal dan akhir."); return; }
+
+                this.toggleLoading(true);
+                try {
+                    const res = await fetch(APPS_SCRIPT_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ action: 'read_history', nip: this.user.nip, startDate, endDate })
+                    }).then(r => r.json());
+
+                    if (res.success && res.data.length > 0) {
+                        const items = res.data;
+                        const header = ["Tanggal", "Jam Mulai", "Jam Selesai", "Kegiatan", "Hasil", "Link Foto"];
+                        let csvContent = header.join(",") + "\n";
+                        
+                        items.forEach(item => {
+                            let row = [
+                                `"${item.tanggal}"`,
+                                `"${item.jamMulai}"`,
+                                `"${item.jamSelesai}"`,
+                                `"${item.kegiatan.replace(/"/g, '""')}"`,
+                                `"${item.hasil.replace(/"/g, '""')}"`,
+                                `"${item.fotoUrl}"`
+                            ];
+                            csvContent += row.join(",") + "\n";
+                        });
+
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const link = document.createElement("a");
+                        const url = URL.createObjectURL(blob);
+                        link.setAttribute("href", url);
+                        link.setAttribute("download", `Laporan_${this.user.nama}_${startDate}_${endDate}.csv`);
+                        link.style.visibility = 'hidden';
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        alert("Tidak ada data untuk periode ini.");
+                    }
+                } catch(e) {
+                    alert("Gagal mengunduh laporan.");
+                }
+                this.toggleLoading(false);
+            },
+            
+            viewImage: function(url) {
+                if(!url || !url.startsWith('http')) return;
+                document.getElementById('modal-img-display').src = url;
+                document.getElementById('modal-image').classList.remove('hidden-view');
+            },
+            
+            closeImage: function() {
+                document.getElementById('modal-image').classList.add('hidden-view');
+                setTimeout(() => document.getElementById('modal-img-display').src = "", 300);
             },
 
             renderCalendar: function() {
@@ -674,9 +897,10 @@
                 const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
                 const safeItem = encodeURIComponent(JSON.stringify(item));
                 
+                // Buttonized Image Icon for Viewing
                 let attachmentHtml = '';
                 if (item.fotoUrl && item.fotoUrl.startsWith('http')) {
-                    attachmentHtml = `<i data-lucide="image" width="14" height="14" class="text-primary"></i>`;
+                    attachmentHtml = `<button onclick="app.viewImage('${item.fotoUrl}')" class="text-primary hover:text-primaryContainer bg-surface p-1 rounded-full"><i data-lucide="image" width="16" height="16"></i></button>`;
                 }
 
                 if (isCompact) {
@@ -707,7 +931,7 @@
                                     <span class="text-xs font-medium text-primary bg-primaryContainer/50 px-2 py-0.5 rounded-md">
                                         ${item.jamMulai} - ${item.jamSelesai}
                                     </span>
-                                    <div class="flex gap-1">
+                                    <div class="flex gap-1 z-10 relative">
                                          ${attachmentHtml}
                                     </div>
                                 </div>
@@ -732,6 +956,7 @@
 
             renderPrintTable: function(data) {
                 const tbody = document.getElementById('print-table-body');
+                if(!tbody) return;
                 tbody.innerHTML = '';
                 data.forEach((item, index) => {
                     const tr = document.createElement('tr');
@@ -839,15 +1064,17 @@
                     const img = new Image();
                     img.onload = () => {
                         const canvas = document.createElement('canvas');
-                        const MAX_WIDTH = 800; 
+                        // Reduced MAX_WIDTH to prevent crash on large payloads
+                        const MAX_WIDTH = 600; 
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        // Slightly lower quality (0.5) to ensure small payload
+                        const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
                         document.getElementById('compressing-indicator').classList.add('hidden-view');
-                        if (dataUrl.length > 100000) {
+                        if (dataUrl.length > 200000) { // Limit to ~200KB check
                              alert("Gambar terlalu besar, silakan ambil ulang.");
                              this.clearImage();
                         } else {
