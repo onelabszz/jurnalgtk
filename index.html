@@ -31,13 +31,20 @@
 
     /* CSS KHUSUS UNTUK CETAK / PDF */
     @media print {
-      @page { size: A4; margin: 2cm; }
-      body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      @page { size: landscape; margin: 1cm; } /* Memaksa Landscape */
+      body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; font-family: Arial, sans-serif; }
       .no-print { display: none !important; }
-      .print-only { display: block !important; }
+      .print-only { display: block !important; width: 100%; }
       .page-break { page-break-inside: avoid; }
+      
+      /* Reset Container Constraints for Print */
+      #root > div { max-width: none !important; box-shadow: none !important; margin: 0 !important; }
     }
     .print-only { display: none; }
+    
+    /* Toast Animation */
+    @keyframes slideDown { from { transform: translateY(-100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .toast-anim { animation: slideDown 0.3s ease-out forwards; }
   </style>
 </head>
 <body class="bg-gray-50 text-gray-800 antialiased selection:bg-blue-100 selection:text-blue-900">
@@ -52,7 +59,7 @@
       Clock, LogOut, Plus, Save, User, CheckCircle2, 
       Home, BarChart2, Settings, FileText, Bell, Loader2, Link, Printer, Database,
       Mic, Pencil, Trash2, X, FileSpreadsheet, LayoutGrid, List, Image, Users, KeyRound, School,
-      TrendingUp, ListChecks
+      TrendingUp, ListChecks, AlertCircle, CheckCircle, ShieldCheck, ArrowLeft
     } from 'lucide-react';
 
     // --- KONFIGURASI PENTING ---
@@ -91,6 +98,25 @@
     const DEFAULT_KEGIATAN = ["Melaksanakan KBM di kelas", "Membuat perangkat ajar"];
     const DEFAULT_HASIL = ["Terlaksananya KBM dengan baik", "Tersusunnya RPP/Modul"];
 
+    // --- TOAST COMPONENT ---
+    function Toast({ message, type, onClose }) {
+      useEffect(() => {
+        const timer = setTimeout(onClose, 3000);
+        return () => clearTimeout(timer);
+      }, [onClose]);
+
+      const bgClass = type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-gray-800';
+      const icon = type === 'success' ? <CheckCircle size={20} /> : type === 'error' ? <AlertCircle size={20} /> : <Bell size={20} />;
+
+      return (
+        <div className={`fixed top-4 left-4 right-4 z-[100] md:left-1/2 md:-translate-x-1/2 md:w-auto md:min-w-[300px] flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl text-white ${bgClass} toast-anim`}>
+           <div>{icon}</div>
+           <p className="text-sm font-bold flex-1">{message}</p>
+           <button onClick={onClose}><X size={16} className="opacity-70 hover:opacity-100" /></button>
+        </div>
+      );
+    }
+
     // --- APP COMPONENT ---
     function App() {
       const [view, setView] = useState('login'); 
@@ -102,18 +128,20 @@
       const [suggestionsHasil, setSuggestionsHasil] = useState(DEFAULT_HASIL);
       const [isLoadingRef, setIsLoadingRef] = useState(false);
       const [isDeleting, setIsDeleting] = useState(false);
+      
+      // Toast State
+      const [toast, setToast] = useState(null);
+
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type, id: Date.now() });
+      };
 
       useEffect(() => {
         const savedUser = localStorage.getItem('jurnal_user');
         if (savedUser) { 
           const u = JSON.parse(savedUser);
           setUser(u);
-          // Cek Role
-          if (u.role === 'Kepala Sekolah' || u.role === 'Admin') {
-            setView('admin');
-          } else {
-            setView('main'); 
-          }
+          setView('main'); // Semua user (termasuk KS) masuk ke main dulu
         }
         fetchReferenceData();
       }, []);
@@ -135,20 +163,19 @@
       const handleLogin = (u) => { 
         setUser(u); 
         localStorage.setItem('jurnal_user', JSON.stringify(u));
-        if (u.role === 'Kepala Sekolah' || u.role === 'Admin') {
-          setView('admin');
-        } else {
-          setView('main'); 
-        }
+        showToast(`Selamat datang, ${u.nama}!`, 'success');
+        setView('main'); // Semua user masuk ke main
       };
 
-      const handleLogout = () => { setUser(null); localStorage.removeItem('jurnal_user'); setView('login'); };
+      const handleLogout = () => { setUser(null); localStorage.removeItem('jurnal_user'); setView('login'); showToast('Berhasil keluar', 'info'); };
       
       const handleSaveSuccess = (entry) => { 
         if (editingEntry) {
           setEntries(entries.map(e => e.id === entry.id ? entry : e));
+          showToast('Jurnal berhasil diperbarui', 'success');
         } else {
           setEntries([entry, ...entries]); 
+          showToast('Jurnal berhasil disimpan', 'success');
         }
         setEditingEntry(null);
         setView('main'); 
@@ -167,15 +194,18 @@
            const result = await response.json();
            if (result.success) {
              setEntries(entries.filter(e => e.id !== id));
+             showToast('Jurnal berhasil dihapus', 'success');
            } else {
-             alert("Gagal menghapus: " + result.message);
+             showToast("Gagal menghapus: " + result.message, 'error');
            }
-        } catch (err) { alert("Terjadi kesalahan koneksi."); } finally { setIsDeleting(false); }
+        } catch (err) { showToast("Terjadi kesalahan koneksi.", 'error'); } finally { setIsDeleting(false); }
       };
 
       return (
         <div className="min-h-screen relative max-w-md mx-auto bg-gray-50 shadow-2xl overflow-hidden min-h-screen print:max-w-none print:shadow-none print:overflow-visible">
-          {view === 'login' && <LoginScreen onLogin={handleLogin} />}
+          {toast && <Toast key={toast.id} message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+          
+          {view === 'login' && <LoginScreen onLogin={handleLogin} showToast={showToast} />}
           
           {view === 'main' && user && (
             <MainScreen 
@@ -186,6 +216,8 @@
               onEdit={handleEditClick}
               onDelete={handleDeleteClick}
               isDeleting={isDeleting}
+              showToast={showToast}
+              onOpenAdmin={() => setView('admin')}
             />
           )}
 
@@ -198,6 +230,7 @@
               suggestionsKegiatan={suggestionsKegiatan} 
               suggestionsHasil={suggestionsHasil} 
               isLoadingRef={isLoadingRef}
+              showToast={showToast}
             />
           )}
 
@@ -207,6 +240,8 @@
               onLogout={handleLogout}
               defaultRefKegiatan={suggestionsKegiatan}
               defaultRefHasil={suggestionsHasil}
+              showToast={showToast}
+              onBackToApp={() => setView('main')}
             />
           )}
         </div>
@@ -241,17 +276,21 @@
     }
 
     // --- ADMIN DASHBOARD ---
-    function AdminDashboard({ user, onLogout, defaultRefKegiatan, defaultRefHasil }) {
+    function AdminDashboard({ user, onLogout, defaultRefKegiatan, defaultRefHasil, showToast, onBackToApp }) {
       const [activeTab, setActiveTab] = useState('stats'); // stats, users, refs
       
       return (
         <div className="h-full flex flex-col bg-gray-50">
           <div className="bg-gray-900 text-white px-6 pt-10 pb-6 shadow-sm z-10 sticky top-0">
              <div className="flex justify-between items-center mb-4">
-                <div>
-                   <h2 className="text-xl font-bold">Admin Panel</h2>
-                   <p className="text-xs text-gray-400">{user.nama}</p>
+                <div className="flex items-center gap-3">
+                   <button onClick={onBackToApp} className="p-2 bg-gray-800 rounded-full hover:bg-gray-700 text-white"><ArrowLeft size={18} /></button>
+                   <div>
+                      <h2 className="text-xl font-bold">Admin Panel</h2>
+                      <p className="text-xs text-gray-400">{user.nama}</p>
+                   </div>
                 </div>
+                {/* Logout moved to profile tab usually, but kept here for fallback or removed if redundancy unwanted. Keeping logout here too for admin convenience */}
                 <button onClick={onLogout} className="bg-red-600 p-2 rounded-lg text-white hover:bg-red-700"><LogOut size={16} /></button>
              </div>
              <div className="flex gap-2">
@@ -263,13 +302,14 @@
           
           <div className="flex-1 overflow-y-auto p-4 pb-20">
              {activeTab === 'stats' && <AdminStats />}
-             {activeTab === 'users' && <AdminUsers />}
-             {activeTab === 'refs' && <AdminRefs defaultKegiatan={defaultRefKegiatan} defaultHasil={defaultRefHasil} />}
+             {activeTab === 'users' && <AdminUsers showToast={showToast} />}
+             {activeTab === 'refs' && <AdminRefs defaultKegiatan={defaultRefKegiatan} defaultRefHasil={defaultRefHasil} showToast={showToast} />}
           </div>
         </div>
       );
     }
 
+    // ... AdminStats, AdminUsers, AdminRefs components remain unchanged ...
     function AdminStats() {
       const [stats, setStats] = useState([]);
       const [loading, setLoading] = useState(false);
@@ -310,7 +350,7 @@
       );
     }
 
-    function AdminUsers() {
+    function AdminUsers({ showToast }) {
       const [users, setUsers] = useState([]);
       const [loading, setLoading] = useState(false);
       const [showForm, setShowForm] = useState(false);
@@ -332,13 +372,13 @@
       const handleAdd = () => { setFormData({ nip: '', nama: '', pin: '', role: 'Guru Mapel', sekolah: 'SMAN 1' }); setIsEditing(false); setShowForm(true); };
 
       const handleSave = async () => {
-        if (!formData.nip || !formData.nama || !formData.pin) return alert("Mohon lengkapi data");
+        if (!formData.nip || !formData.nama || !formData.pin) return showToast("Mohon lengkapi data", 'error');
         setLoading(true);
         try {
            const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_save_user', user: formData }) });
            const json = await res.json();
-           if (json.success) { setShowForm(false); loadUsers(); } else { alert(json.message); }
-        } catch(e) { alert("Gagal menyimpan"); } finally { setLoading(false); }
+           if (json.success) { setShowForm(false); loadUsers(); showToast("Data guru disimpan", 'success'); } else { showToast(json.message, 'error'); }
+        } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); }
       };
 
       const handleDelete = async (nip) => {
@@ -347,8 +387,8 @@
         try {
            const res = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_delete_user', nip }) });
            const json = await res.json();
-           if (json.success) loadUsers(); else alert(json.message);
-        } catch(e) { alert("Gagal menghapus"); } finally { setLoading(false); }
+           if (json.success) { loadUsers(); showToast("Guru dihapus", 'success'); } else showToast(json.message, 'error');
+        } catch(e) { showToast("Gagal menghapus", 'error'); } finally { setLoading(false); }
       };
 
       return (
@@ -396,9 +436,9 @@
       );
     }
 
-    function AdminRefs({ defaultKegiatan, defaultHasil }) {
+    function AdminRefs({ defaultKegiatan, defaultRefHasil, showToast }) {
        const [kegiatan, setKegiatan] = useState(defaultKegiatan);
-       const [hasil, setHasil] = useState(defaultHasil);
+       const [hasil, setHasil] = useState(defaultRefHasil); // Fixed variable name mapping
        const [tempItem, setTempItem] = useState("");
        const [activeSection, setActiveSection] = useState('kegiatan');
        const [loading, setLoading] = useState(false);
@@ -422,8 +462,8 @@
            await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'kegiatan', items: kegiatan }) });
            // Save Hasil
            await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'admin_update_ref', type: 'hasil', items: hasil }) });
-           alert("Referensi berhasil disimpan!");
-         } catch(e) { alert("Gagal menyimpan"); } finally { setLoading(false); }
+           showToast("Referensi berhasil disimpan!", 'success');
+         } catch(e) { showToast("Gagal menyimpan", 'error'); } finally { setLoading(false); }
        };
 
        return (
@@ -453,7 +493,8 @@
          </div>
        );
     }
-
+    // ... CalendarView, LoginScreen remain unchanged ...
+    
     // --- CALENDAR VIEW ---
     function CalendarView({ entries, onSelectDate, selectedDate }) {
       const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -503,7 +544,9 @@
                 className={`h-9 w-9 rounded-full flex flex-col items-center justify-center text-sm relative transition-all ${isSelected(day) ? 'bg-blue-600 text-white shadow-lg' : 'hover:bg-gray-100 text-gray-700'}`}
               >
                 <span>{day}</span>
-                {hasEntry(day) && !isSelected(day) && <span className="w-1 h-1 bg-green-500 rounded-full absolute bottom-1"></span>}
+                {hasEntry(day) && (
+                  <span className={`w-1.5 h-1.5 rounded-full absolute bottom-1 transition-colors ${isSelected(day) ? 'bg-white' : 'bg-green-500'}`}></span>
+                )}
               </button>
             ))}
           </div>
@@ -512,21 +555,20 @@
     }
 
     // --- SCREEN 1: LOGIN ---
-    function LoginScreen({ onLogin }) {
+    function LoginScreen({ onLogin, showToast }) {
       const [pin, setPin] = useState('');
-      const [error, setError] = useState('');
       const [isLoading, setIsLoading] = useState(false);
 
       const handleSubmit = async (e) => {
         e.preventDefault();
         if (!pin) return;
-        setIsLoading(true); setError('');
+        setIsLoading(true); 
         try {
           const response = await fetch(APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'login', pin: pin }) });
           const result = await response.json();
           if (result.success) onLogin(result.user);
-          else { setError('PIN Tidak Ditemukan. Cek Sheet DataGuru.'); setPin(''); }
-        } catch (err) { setError('Gagal terhubung ke server.'); } finally { setIsLoading(false); }
+          else { showToast('PIN Tidak Ditemukan. Cek Sheet DataGuru.', 'error'); setPin(''); }
+        } catch (err) { showToast('Gagal terhubung ke server.', 'error'); } finally { setIsLoading(false); }
       };
 
       return (
@@ -538,7 +580,6 @@
             <form onSubmit={handleSubmit} className="w-full bg-white/10 backdrop-blur-md p-6 rounded-2xl border border-white/20 shadow-xl">
               <label className="block text-xs font-medium text-blue-100 mb-2 uppercase tracking-wider text-center">PIN Keamanan</label>
               <input type="password" value={pin} onChange={(e) => setPin(e.target.value)} disabled={isLoading} className="w-full bg-black/10 text-center text-3xl tracking-[0.5em] py-3 rounded-lg border border-transparent focus:border-white focus:bg-black/20 focus:outline-none transition-all font-mono placeholder-white/30 mb-4" placeholder="••••••" maxLength={6} inputMode="numeric" autoFocus />
-              {error && <div className="bg-red-500/20 text-red-200 text-xs text-center py-2 rounded mb-4 border border-red-500/50">{error}</div>}
               <button type="submit" disabled={isLoading} className="w-full bg-white text-blue-600 font-bold py-3.5 rounded-xl shadow-lg hover:bg-blue-50 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed">
                 {isLoading ? <Loader2 className="animate-spin" size={20} /> : 'MASUK APLIKASI'}
               </button>
@@ -549,7 +590,7 @@
     }
 
     // --- SCREEN 2: MAIN LAYOUT ---
-    function MainScreen({ user, entries, onLogout, onAdd, onEdit, onDelete, isDeleting }) {
+    function MainScreen({ user, entries, onLogout, onAdd, onEdit, onDelete, isDeleting, showToast, onOpenAdmin }) {
       const [activeTab, setActiveTab] = useState('home');
 
       return (
@@ -564,7 +605,7 @@
           <div className="flex-1 overflow-y-auto pb-24 no-print">
             {activeTab === 'home' && <HomeTab user={user} entries={entries} onEdit={onEdit} onDelete={onDelete} />}
             {activeTab === 'rekap' && <RekapTab user={user} entries={entries} />}
-            {activeTab === 'profile' && <ProfileTab user={user} onLogout={onLogout} />}
+            {activeTab === 'profile' && <ProfileTab user={user} onLogout={onLogout} onOpenAdmin={onOpenAdmin} />}
           </div>
           {activeTab === 'home' && (
             <button onClick={onAdd} className="fixed bottom-20 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-xl shadow-blue-600/30 flex items-center justify-center hover:bg-blue-700 hover:scale-105 active:scale-90 transition-all z-20 no-print">
@@ -581,6 +622,8 @@
       );
     }
 
+    // ... HomeTab, RekapTab components remain unchanged ...
+    
     // --- TABS COMPONENTS ---
     function HomeTab({ user, entries, onEdit, onDelete }) {
       const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
@@ -686,7 +729,7 @@
              <h2 className="text-2xl font-bold text-gray-800">Rekapitulasi</h2>
              <div className="flex gap-2">
                <button onClick={handlePrint} className="flex-1 flex items-center justify-center gap-2 bg-gray-900 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-gray-800 transition-colors">
-                 <Printer size={16} /> Print / PDF
+                 <Printer size={16} /> Cetak Rekap (PDF)
                </button>
                <button onClick={handleExportExcel} className="flex-1 flex items-center justify-center gap-2 bg-green-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-green-700 transition-colors">
                  <FileSpreadsheet size={16} /> Excel / CSV
@@ -735,7 +778,9 @@
     }
 
     // --- OTHER COMPONENTS (Profile, Form, etc.) unchanged structure but kept for context ---
-    function ProfileTab({ user, onLogout }) {
+    function ProfileTab({ user, onLogout, onOpenAdmin }) {
+      const isPrivileged = user.role === 'Kepala Sekolah' || user.role === 'Admin';
+      
       return (
         <div className="bg-gray-50 h-full">
            <div className="bg-white pb-6 pt-10 rounded-b-3xl shadow-sm px-6 text-center border-b border-gray-100">
@@ -752,6 +797,20 @@
                  <ProfileMenuItem icon={<User size={18} />} label="Data Pribadi" />
                  <ProfileMenuItem icon={<Settings size={18} />} label="Ganti PIN" />
               </div>
+              
+              {isPrivileged && (
+                <>
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2 mt-6">Khusus Admin</p>
+                  <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                     <button onClick={onOpenAdmin} className="w-full flex items-center gap-3 p-4 text-left border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors">
+                        <div className="text-gray-400"><ShieldCheck size={18} /></div>
+                        <span className="font-medium text-gray-700 text-sm flex-1">Panel Admin / Kepala Sekolah</span>
+                        <ChevronRight size={16} className="text-gray-300" />
+                     </button>
+                  </div>
+                </>
+              )}
+
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider ml-2 mt-6">Lainnya</p>
               <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                  <button onClick={onLogout} className="w-full flex items-center gap-3 p-4 text-left hover:bg-red-50 transition-colors group">
@@ -764,6 +823,8 @@
         </div>
       );
     }
+    
+    // ... ProfileMenuItem, NavButton, FormScreen remain unchanged ...
 
     function ProfileMenuItem({ icon, label, badge }) {
       return (
@@ -784,7 +845,7 @@
       )
     }
 
-    function FormScreen({ user, onCancel, onSuccess, suggestionsKegiatan, suggestionsHasil, isLoadingRef, initialData }) {
+    function FormScreen({ user, onCancel, onSuccess, suggestionsKegiatan, suggestionsHasil, isLoadingRef, initialData, showToast }) {
       const [kegiatan, setKegiatan] = useState(initialData ? initialData.kegiatan : '');
       const [hasil, setHasil] = useState(initialData ? initialData.hasil : '');
       const [showDetail, setShowDetail] = useState(!!initialData); 
@@ -805,12 +866,12 @@
           try {
             const compressedBase64 = await compressImage(file);
             setFotoPreview(compressedBase64);
-          } catch (err) { alert("Gagal memproses gambar"); console.error(err); }
+          } catch (err) { showToast("Gagal memproses gambar", 'error'); console.error(err); }
         }
       };
 
       const handleSubmit = async () => {
-        if (!kegiatan || !hasil) { alert("Mohon isi Kegiatan dan Hasil Kegiatan."); return; }
+        if (!kegiatan || !hasil) { showToast("Mohon isi Kegiatan dan Hasil Kegiatan.", 'error'); return; }
         setIsSubmitting(true);
         
         const dataJurnal = {
@@ -827,8 +888,8 @@
           if (result.success) { 
              const finalEntry = { ...dataJurnal, foto: fotoPreview }; 
              onSuccess(finalEntry); 
-          } else { alert("Gagal: " + result.message); }
-        } catch (err) { alert("Gagal koneksi ke server."); } finally { setIsSubmitting(false); }
+          } else { showToast("Gagal: " + result.message, 'error'); }
+        } catch (err) { showToast("Gagal koneksi ke server.", 'error'); } finally { setIsSubmitting(false); }
       };
 
       return (
@@ -926,6 +987,76 @@
              <button onClick={handleSubmit} disabled={isSubmitting} className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-600/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:bg-gray-400">
                 {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />} {isSubmitting ? (initialData ? 'MENGUPDATE...' : 'MENYIMPAN...') : (initialData ? 'UPDATE JURNAL' : 'SIMPAN JURNAL')}
               </button>
+          </div>
+        </div>
+      );
+    }
+    
+    // --- PRINTABLE REPORT (Revised for Landscape & Excel Look) ---
+    function PrintableReport({ user, entries }) {
+      const bulanIni = new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+      return (
+        <div className="print-only bg-white text-black p-0 text-xs">
+          <div className="text-center mb-6">
+            <h1 className="text-xl font-bold uppercase border-b-2 border-black pb-2 inline-block px-10">Laporan Kinerja Harian Guru</h1>
+            <h2 className="text-sm mt-2">Periode: {bulanIni}</h2>
+          </div>
+          
+          <div className="flex justify-between mb-4 px-2">
+             <table className="w-1/2">
+                <tbody>
+                  <tr><td className="w-24 font-bold">Nama</td><td>: {user.nama}</td></tr>
+                  <tr><td className="font-bold">NIP</td><td>: {user.nip}</td></tr>
+                </tbody>
+             </table>
+             <table className="w-1/2 text-right">
+                <tbody>
+                   <tr><td className="w-24 font-bold">Unit Kerja</td><td>: {user.sekolah}</td></tr>
+                   <tr><td className="font-bold">Jabatan</td><td>: {user.role}</td></tr>
+                </tbody>
+             </table>
+          </div>
+
+          <table className="w-full border-collapse border border-black text-xs mb-8">
+            <thead>
+              <tr className="bg-gray-200 text-center font-bold">
+                <th className="border border-black p-2 w-10">No</th>
+                <th className="border border-black p-2 w-32">Hari/Tanggal</th>
+                <th className="border border-black p-2 w-24">Waktu</th>
+                <th className="border border-black p-2">Uraian Kegiatan</th>
+                <th className="border border-black p-2 w-1/4">Hasil / Output</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.length === 0 ? (
+                 <tr><td colSpan="5" className="border border-black p-4 text-center italic">Tidak ada data jurnal bulan ini.</td></tr>
+              ) : (
+                entries.map((e, idx) => (
+                  <tr key={idx} className="page-break">
+                    <td className="border border-black p-2 text-center align-top">{idx + 1}</td>
+                    <td className="border border-black p-2 align-top text-center">{formatDateIndo(parseInt(e.id))}</td>
+                    <td className="border border-black p-2 text-center align-top whitespace-nowrap">{e.jamMulai} - {e.jamSelesai}</td>
+                    <td className="border border-black p-2 align-top text-justify">{e.kegiatan}</td>
+                    <td className="border border-black p-2 align-top text-justify">{e.hasil}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+          
+          <div className="flex justify-between mt-12 px-10 page-break">
+             <div className="text-center w-64">
+                <p>Mengetahui,</p>
+                <p className="font-bold mb-20">Kepala Sekolah</p>
+                <p className="border-b border-black inline-block min-w-[150px] font-bold">&nbsp;</p>
+                <p className="mt-1">NIP. .....................................</p>
+             </div>
+             <div className="text-center w-64">
+                <p>Jakarta, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                <p className="font-bold mb-20">Guru Yang Bersangkutan</p>
+                <p className="font-bold border-b border-black inline-block min-w-[150px]">{user.nama}</p>
+                <p className="mt-1">NIP. {user.nip}</p>
+             </div>
           </div>
         </div>
       );
