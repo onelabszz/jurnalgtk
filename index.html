@@ -369,7 +369,7 @@
                 <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
             </button>
             
-             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.5.0 (Admin Panel)</p>
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 1.5.2 (Stability Fix)</p>
         </div>
     </div>
 
@@ -442,18 +442,21 @@
                 <div class="flex flex-col gap-4">
                     <div class="flex gap-3">
                         <!-- FIX: Gunakan Label sebagai pembungkus Input agar trigger native camera bekerja -->
+                        <!-- FIX: Use image/* for general compatibility in AppCreator24/WebView -->
                         <label class="flex-1 relative cursor-pointer group">
                              <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
                                 <i data-lucide="camera" width="20" height="20"></i> Kamera
                              </div>
-                             <input type="file" id="inp-foto-camera" accept="image/jpeg, image/png" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                             <!-- capture="environment" forces camera on mobile -->
+                             <input type="file" id="inp-foto-camera" accept="image/*" capture="environment" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                         </label>
                         
                         <label class="flex-1 relative cursor-pointer group">
                             <div class="py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface group-active:bg-surfaceVariant transition flex items-center justify-center gap-2">
                                 <i data-lucide="image" width="20" height="20"></i> Galeri
                             </div>
-                            <input type="file" id="inp-foto-gallery" accept="image/jpeg, image/png" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
+                            <!-- No capture attribute allows picking from gallery -->
+                            <input type="file" id="inp-foto-gallery" accept="image/*" class="absolute inset-0 opacity-0 cursor-pointer w-full h-full">
                         </label>
                     </div>
 
@@ -583,6 +586,7 @@
             meta: {}, 
             teachers: [], // List guru for admin
             currentPhotoBase64: "",
+            currentPreviewUrl: "", // Track object URL to revoke it
             isListening: null,
             selectedDate: null, 
             currentTab: 'list', 
@@ -1201,8 +1205,14 @@
                 document.getElementById('form-title').innerText = "Jurnal Baru";
                 document.getElementById('inp-id').value = "";
                 document.getElementById('existing-photo-url').value = "";
-                // Set default date to Today (Local Timezone Fix)
-                document.getElementById('inp-tanggal').value = new Date().toLocaleDateString('en-CA');
+                
+                // Manual formatting to ensure YYYY-MM-DD regardless of locale support in WebView
+                const now = new Date();
+                const yyyy = now.getFullYear();
+                const mm = String(now.getMonth() + 1).padStart(2, '0');
+                const dd = String(now.getDate()).padStart(2, '0');
+                document.getElementById('inp-tanggal').value = `${yyyy}-${mm}-${dd}`;
+                
                 document.getElementById('inp-kegiatan').value = '';
                 document.getElementById('inp-hasil').value = '';
                 this.clearImage();
@@ -1280,6 +1290,15 @@
                     return;
                 }
 
+                // FIX: Use ObjectURL for Instant Preview (Crash Prevention)
+                if (this.currentPreviewUrl) URL.revokeObjectURL(this.currentPreviewUrl);
+                const objectUrl = URL.createObjectURL(file);
+                this.currentPreviewUrl = objectUrl;
+                document.getElementById('img-preview').src = objectUrl;
+                document.getElementById('preview-container').classList.remove('hidden-view');
+                document.getElementById('existing-photo-url').value = ""; 
+
+                // Process Compression in Background (for Saving)
                 document.getElementById('compressing-indicator').classList.remove('hidden-view');
                 const reader = new FileReader();
                 reader.onload = (event) => {
@@ -1301,9 +1320,8 @@
                             document.getElementById('compressing-indicator').classList.add('hidden-view');
                             
                             this.currentPhotoBase64 = dataUrl;
-                            document.getElementById('img-preview').src = dataUrl;
-                            document.getElementById('preview-container').classList.remove('hidden-view');
-                            document.getElementById('existing-photo-url').value = ""; 
+                            // NOTE: We do NOT set img-preview.src here to avoid Base64 DOM crash.
+                            // We keep using the ObjectURL for display.
                         } catch (err) {
                             alert("Gagal memproses gambar. Memori browser tidak cukup.");
                             this.clearImage();
@@ -1320,6 +1338,10 @@
 
             clearImage: function() {
                 this.currentPhotoBase64 = "";
+                if (this.currentPreviewUrl) {
+                    URL.revokeObjectURL(this.currentPreviewUrl);
+                    this.currentPreviewUrl = "";
+                }
                 document.getElementById('inp-foto-camera').value = "";
                 document.getElementById('inp-foto-gallery').value = "";
                 document.getElementById('existing-photo-url').value = "";
