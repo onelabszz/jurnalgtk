@@ -356,6 +356,7 @@
                 const stored = localStorage.getItem('jg_user');
                 if (stored) {
                     this.user = JSON.parse(stored);
+                    if(this.user.kota) APP_CITY = this.user.kota;
                     this.checkAdminStatus();
                     this.navigate('dashboard');
                 } else {
@@ -383,7 +384,7 @@
                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'get_ref'})}).then(r=>r.json());
                     if(r.success) { 
                         this.refs = {kegiatan: r.kegiatan, hasil: r.hasil};
-                        if(r.city) APP_CITY = r.city;
+                        if(!this.user && r.city) APP_CITY = r.city;
                     }
                 } catch(e){}
             },
@@ -435,6 +436,7 @@
                     if(r.success) {
                         this.user = r.user;
                         localStorage.setItem('jg_user', JSON.stringify(this.user));
+                        if(this.user.kota) APP_CITY = this.user.kota;
                         this.checkAdminStatus();
                         this.navigate('dashboard');
                     } else alert(r.message);
@@ -716,7 +718,11 @@
                     if(r.success && r.data.length) {
                         const tb = document.getElementById('print-table-body'); tb.innerHTML = '';
                         r.data.forEach((it,i) => {
-                             tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${it.tanggal}</td><td class="border border-black p-2 text-center">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${it.fotoUrl.startsWith('http')?'Link':'-'}</td></tr>`;
+                             let photoLink = '-';
+                             if(it.fotoUrl.startsWith('http')) {
+                                photoLink = `<div style="word-break:break-all;color:blue;">${it.fotoUrl}</div>`;
+                             }
+                             tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${it.tanggal}</td><td class="border border-black p-2 text-center">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${photoLink}</td></tr>`;
                         });
                         document.getElementById('print-ks-name').innerText = r.meta.ksName;
                         document.getElementById('print-ks-nip').innerText = r.meta.ksNip;
@@ -726,7 +732,7 @@
                         
                         const el = document.getElementById('report-container');
                         el.classList.remove('hidden-view');
-                        await html2pdf().set({margin:0.5, filename:`Laporan_${this.user.nama}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4'}}).from(el).save();
+                        await html2pdf().set({margin:0.3, filename:`Laporan_${this.user.nama}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4', orientation:'landscape'}}).from(el).save();
                         el.classList.add('hidden-view');
                     } else alert("Tidak ada data");
                 } catch(err){alert("Gagal print")}
@@ -736,17 +742,18 @@
                 this.toggleLoading(true);
                 const s = document.getElementById('report-start').value; const e = document.getElementById('report-end').value;
                 try {
-                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'read_history', nip:this.user.nip, startDate:s, endDate:e})}).then(x=>x.json());
-                     if(r.success && r.data.length) {
-                         let csv = "Tanggal,Jam,Kegiatan,Hasil,Link Foto\n";
-                         r.data.forEach(x => {
-                             csv += `"${x.tanggal}","${x.jamMulai}-${x.jamSelesai}","${x.kegiatan.replace(/"/g,'""')}","${x.hasil.replace(/"/g,'""')}","${x.fotoUrl}"\n`;
-                         });
-                         const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
-                         const a = document.createElement('a'); a.href=uri; a.download=`Jurnal_${this.user.nama}.csv`;
+                     const res = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'download_excel_formal', nip:this.user.nip, startDate:s, endDate:e})}).then(x=>x.json());
+                     if(res.success && res.base64) {
+                         const byteCharacters = atob(res.base64);
+                         const byteNumbers = new Array(byteCharacters.length);
+                         for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }
+                         const byteArray = new Uint8Array(byteNumbers);
+                         const blob = new Blob([byteArray], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                         const uri = URL.createObjectURL(blob);
+                         const a = document.createElement("a"); a.href=uri; a.download=res.filename || "Laporan.xlsx";
                          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                     } else alert("Tidak ada data");
-                } catch(err){alert("Gagal download")}
+                     } else alert("Gagal download: " + res.message);
+                } catch(err){alert("Error download")}
                 this.toggleLoading(false);
             }
         };
