@@ -308,6 +308,7 @@
             <div>
                 <p><span class="inline-block w-24 font-bold">Nama</span>: <span class="print-name"></span></p>
                 <p><span class="inline-block w-24 font-bold">NIP</span>: <span class="print-nip"></span></p>
+                <p><span class="inline-block w-24 font-bold">Jabatan</span>: <span class="print-role"></span></p>
             </div>
             <div>
                 <p><span class="inline-block w-24 font-bold">Unit Kerja</span>: <span class="print-school"></span></p>
@@ -335,7 +336,7 @@
             </div>
             <div class="text-center w-64">
                 <p class="mb-1"><span id="print-city">...</span>, <span id="print-date">...</span></p>
-                <p class="mb-16">Guru Yang Bersangkutan</p>
+                <p class="mb-16 print-role font-bold"></p>
                 <p class="font-bold underline print-name mb-1"></p>
                 <p class="print-nip-prefix text-xs">NIP. <span class="print-nip"></span></p>
             </div>
@@ -425,6 +426,7 @@
                 for(let k in els) { const el = document.getElementById(k); if(el) el.innerText = els[k]; }
                 document.querySelectorAll('.print-name').forEach(e=>e.innerText=this.user.nama);
                 document.querySelectorAll('.print-nip').forEach(e=>e.innerText=this.user.nip);
+                document.querySelectorAll('.print-role').forEach(e=>e.innerText=this.user.role || 'Guru'); // Updated
                 document.querySelectorAll('.print-school').forEach(e=>e.innerText=this.user.sekolah);
             },
 
@@ -717,19 +719,29 @@
                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'read_history', nip:this.user.nip, startDate:s, endDate:e})}).then(x=>x.json());
                     if(r.success && r.data.length) {
                         const tb = document.getElementById('print-table-body'); tb.innerHTML = '';
+                        const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+                        const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
                         r.data.forEach((it,i) => {
                              let photoLink = '-';
                              if(it.fotoUrl.startsWith('http')) {
                                 photoLink = `<div style="word-break:break-all;color:blue;">${it.fotoUrl}</div>`;
                              }
-                             tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${it.tanggal}</td><td class="border border-black p-2 text-center">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${photoLink}</td></tr>`;
+                             const d = new Date(it.tanggal);
+                             const fmtDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                             tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${fmtDate}</td><td class="border border-black p-2 text-center" style="white-space:nowrap;">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${photoLink}</td></tr>`;
                         });
                         document.getElementById('print-ks-name').innerText = r.meta.ksName;
                         document.getElementById('print-ks-nip').innerText = r.meta.ksNip;
                         document.getElementById('print-city').innerText = APP_CITY;
-                        document.getElementById('print-date').innerText = new Date().toLocaleDateString('id-ID',{dateStyle:'long'});
-                        document.querySelector('.print-period').innerText = `${s} s.d ${e}`;
                         
+                        const now = new Date();
+                        document.getElementById('print-date').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+                        
+                        // Format Period dd-mm-yyyy
+                        const fmtP = (d) => { const x=new Date(d); return `${String(x.getDate()).padStart(2,'0')}-${String(x.getMonth()+1).padStart(2,'0')}-${x.getFullYear()}`; };
+                        document.querySelector('.print-period').innerText = `${fmtP(s)} s.d. ${fmtP(e)}`;
+
                         const el = document.getElementById('report-container');
                         el.classList.remove('hidden-view');
                         await html2pdf().set({margin:0.3, filename:`Laporan_${this.user.nama}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4', orientation:'landscape'}}).from(el).save();
