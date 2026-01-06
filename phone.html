@@ -505,6 +505,7 @@
             <div>
                 <p><span class="inline-block w-24 font-bold">Nama</span>: <span class="print-name"></span></p>
                 <p><span class="inline-block w-24 font-bold">NIP</span>: <span class="print-nip"></span></p>
+                <p><span class="inline-block w-24 font-bold">Jabatan</span>: <span class="print-role"></span></p>
             </div>
             <div>
                 <p><span class="inline-block w-24 font-bold">Unit Kerja</span>: <span class="print-school"></span></p>
@@ -535,7 +536,7 @@
 
             <div class="text-center w-64">
                 <p class="mb-1"><span id="print-city">Jakarta</span>, <span id="print-date">...</span></p>
-                <p class="mb-16">Guru Yang Bersangkutan</p>
+                <p class="mb-16 print-role font-bold"></p>
                 <p class="font-bold underline print-name mb-1"></p>
                 <p class="print-nip-prefix text-xs">NIP. <span class="print-nip"></span></p>
             </div>
@@ -1009,6 +1010,7 @@
                 
                 document.querySelectorAll('.print-name').forEach(el => el.innerText = this.user.nama);
                 document.querySelectorAll('.print-nip').forEach(el => el.innerText = this.user.nip);
+                document.querySelectorAll('.print-role').forEach(el => el.innerText = this.user.role || 'Guru'); // Updated
                 document.querySelectorAll('.print-school').forEach(el => el.innerText = this.user.sekolah);
                 document.getElementById('print-school-header').innerText = this.user.sekolah;
             },
@@ -1117,11 +1119,17 @@
                         document.getElementById('print-ks-name').innerText = ksName;
                         document.getElementById('print-ks-nip').innerText = ksNip;
                         document.getElementById('print-city').innerText = APP_CITY; // Use city from state
-                        document.getElementById('print-date').innerText = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
+                        
+                        const now = new Date();
+                        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                        document.getElementById('print-date').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
 
-                        const s = new Date(startDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-                        const e = new Date(endDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
-                        document.querySelector('.print-period').innerText = `${s} s.d. ${e}`;
+                        // Format period dd-mm-yyyy
+                        const formatPeriod = (dStr) => {
+                            const d = new Date(dStr);
+                            return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+                        };
+                        document.querySelector('.print-period').innerText = `${formatPeriod(startDate)} s.d. ${formatPeriod(endDate)}`;
                         
                         // Use HTML2PDF instead of window.print
                         const element = document.getElementById('report-container');
@@ -1379,17 +1387,23 @@
                 const tbody = document.getElementById('print-table-body');
                 if(!tbody) return;
                 tbody.innerHTML = '';
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
                 data.forEach((item, index) => {
                     let photoLink = "-";
                     if(item.fotoUrl && item.fotoUrl.startsWith("http")) {
                         // Display full link but make it wrap
                         photoLink = `<div style="word-break: break-all; color:blue;">${item.fotoUrl}</div>`;
                     }
+                    const d = new Date(item.tanggal);
+                    const formattedDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
                         <td style="border:1px solid black; padding:6px; text-align:center;">${index + 1}</td>
-                        <td style="border:1px solid black; padding:6px;">${item.tanggal}</td>
-                        <td style="border:1px solid black; padding:6px; text-align:center;">${item.jamMulai} - ${item.jamSelesai}</td>
+                        <td style="border:1px solid black; padding:6px;">${formattedDate}</td>
+                        <td style="border:1px solid black; padding:6px; text-align:center; white-space: nowrap;">${item.jamMulai} - ${item.jamSelesai}</td>
                         <td style="border:1px solid black; padding:6px;">${item.kegiatan}</td>
                         <td style="border:1px solid black; padding:6px;">${item.hasil}</td>
                         <td style="border:1px solid black; padding:6px; text-align:center;">${photoLink}</td>
