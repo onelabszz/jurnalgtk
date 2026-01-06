@@ -545,7 +545,7 @@
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
         
-        // City will be updated by fetchRefs
+        // City will be updated by fetchRefs or Login
         let APP_CITY = "Jakarta";
 
         const app = {
@@ -571,6 +571,7 @@
                 const stored = localStorage.getItem('jg_user');
                 if (stored) {
                     this.user = JSON.parse(stored);
+                    if(this.user.kota) APP_CITY = this.user.kota; // Override city from user preference
                     this.checkAdminStatus();
                     this.navigate('dashboard');
                 } else {
@@ -765,7 +766,9 @@
                     if(res.success) {
                         this.refs.kegiatan = res.kegiatan || [];
                         this.refs.hasil = res.hasil || [];
-                        if(res.city) APP_CITY = res.city;
+                        if(!this.user) { // Only set default city if user not logged in
+                             if(res.city) APP_CITY = res.city;
+                        }
                     }
                 } catch(e) { console.error("Err fetch ref"); }
             },
@@ -1046,6 +1049,7 @@
                     if (res.success) {
                         this.user = res.user;
                         localStorage.setItem('jg_user', JSON.stringify(this.user));
+                        if(this.user.kota) APP_CITY = this.user.kota;
                         this.checkAdminStatus();
                         this.navigate('dashboard');
                     } else {
@@ -1112,7 +1116,7 @@
                         const ksNip = res.meta?.ksNip || "-";
                         document.getElementById('print-ks-name').innerText = ksName;
                         document.getElementById('print-ks-nip').innerText = ksNip;
-                        document.getElementById('print-city').innerText = APP_CITY;
+                        document.getElementById('print-city').innerText = APP_CITY; // Use city from state
                         document.getElementById('print-date').innerText = new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
                         const s = new Date(startDate).toLocaleDateString('id-ID', {day:'numeric', month:'long', year:'numeric'});
@@ -1124,11 +1128,11 @@
                         element.classList.remove('hidden-view'); // Make visible for capture
                         
                         const opt = {
-                          margin:       0.5,
+                          margin:       0.3, // reduce margin slightly for landscape
                           filename:     `Laporan_${this.user.nama}_${startDate}.pdf`,
                           image:        { type: 'jpeg', quality: 0.98 },
                           html2canvas:  { scale: 2 },
-                          jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+                          jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' } // Landscape
                         };
                         
                         await html2pdf().set(opt).from(element).save();
@@ -1152,41 +1156,38 @@
 
                 this.toggleLoading(true);
                 try {
+                    // Call the NEW backend function
                     const res = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'read_history', nip: this.user.nip, startDate, endDate })
+                        body: JSON.stringify({ action: 'download_excel_formal', nip: this.user.nip, startDate, endDate })
                     }).then(r => r.json());
 
-                    if (res.success && res.data.length > 0) {
-                        const items = res.data;
-                        const header = ["Tanggal", "Jam Mulai", "Jam Selesai", "Kegiatan", "Hasil", "Lampiran Foto"];
-                        let csvContent = header.join(",") + "\n";
+                    if (res.success && res.base64) {
+                        // Convert Base64 string to Blob
+                        const byteCharacters = atob(res.base64);
+                        const byteNumbers = new Array(byteCharacters.length);
+                        for (let i = 0; i < byteCharacters.length; i++) {
+                            byteNumbers[i] = byteCharacters.charCodeAt(i);
+                        }
+                        const byteArray = new Uint8Array(byteNumbers);
+                        const blob = new Blob([byteArray], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
                         
-                        items.forEach(item => {
-                            let row = [
-                                `"${item.tanggal}"`,
-                                `"${item.jamMulai}"`,
-                                `"${item.jamSelesai}"`,
-                                `"${item.kegiatan.replace(/"/g, '""')}"`,
-                                `"${item.hasil.replace(/"/g, '""')}"`,
-                                `"${item.fotoUrl}"`
-                            ];
-                            csvContent += row.join(",") + "\n";
-                        });
-
-                        // Use Data URI approach instead of Blob for WebView compatibility
-                        const uri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+                        // Create Link
+                        const uri = URL.createObjectURL(blob);
                         const link = document.createElement("a");
-                        link.setAttribute("href", uri);
-                        link.setAttribute("download", `Laporan_${this.user.nama}_${startDate}_${endDate}.csv`);
+                        link.href = uri;
+                        link.download = res.filename || `Laporan_Resmi.xlsx`;
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
+                        URL.revokeObjectURL(uri);
+                        
+                        this.showToast("Laporan Excel berhasil diunduh.", "normal");
                     } else {
-                        this.showToast("Tidak ada data untuk periode ini.", "error");
+                        this.showToast(res.message || "Gagal mengunduh laporan.", "error");
                     }
                 } catch(e) {
-                    this.showToast("Gagal mengunduh laporan.", "error");
+                    this.showToast("Gagal request: " + e.toString(), "error");
                 }
                 this.toggleLoading(false);
             },
@@ -1381,7 +1382,8 @@
                 data.forEach((item, index) => {
                     let photoLink = "-";
                     if(item.fotoUrl && item.fotoUrl.startsWith("http")) {
-                        photoLink = `<a href="${item.fotoUrl}" target="_blank" style="color:blue; text-decoration:underline;">Lihat</a>`;
+                        // Display full link but make it wrap
+                        photoLink = `<div style="word-break: break-all; color:blue;">${item.fotoUrl}</div>`;
                     }
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
