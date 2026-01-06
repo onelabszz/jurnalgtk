@@ -328,7 +328,7 @@
                 <i data-lucide="log-out" width="18" height="18"></i> Keluar Aplikasi
             </button>
             
-             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 2.0.0 (Fixed)</p>
+             <p class="text-center text-xs text-onSurfaceVariant/50 pb-4">Versi 2.1.0 (Auto-Learn + CamFix)</p>
         </div>
     </div>
 
@@ -399,21 +399,29 @@
             <div>
                 <label class="text-sm font-bold text-secondary uppercase tracking-wider block mb-3">Dokumentasi</label>
                 <div class="flex flex-col gap-4">
-                    <div class="flex gap-3">
+                    <div class="grid grid-cols-2 gap-3">
                         <!-- IN-APP CAMERA BUTTON -->
-                        <div class="flex-1">
-                            <button type="button" onclick="app.startCamera()" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
-                                <i data-lucide="camera" width="20" height="20"></i> Kamera
-                            </button>
-                        </div>
+                        <button type="button" onclick="app.startCamera()" class="w-full py-3 px-3 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex flex-col items-center justify-center gap-1 cursor-pointer">
+                             <i data-lucide="camera" width="20" height="20"></i>
+                             <span class="text-xs">Kamera App</span>
+                        </button>
                         
-                        <!-- Input Gallery -->
-                        <div class="flex-1">
-                            <input type="file" id="inp-foto-gallery" accept="image/*" class="hidden">
-                             <label for="inp-foto-gallery" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
-                                <i data-lucide="image" width="20" height="20"></i> Galeri
+                        <!-- NATIVE CAMERA BUTTON (ROBUST FALLBACK) -->
+                        <div>
+                             <input type="file" id="inp-foto-native" accept="image/*" capture="environment" class="hidden">
+                             <label for="inp-foto-native" class="w-full py-3 px-3 rounded-xl border border-outline bg-secondaryContainer text-onSecondaryContainer hover:shadow transition flex flex-col items-center justify-center gap-1 cursor-pointer">
+                                <i data-lucide="aperture" width="20" height="20"></i>
+                                <span class="text-xs">Kamera HP</span>
                             </label>
                         </div>
+                    </div>
+                    
+                    <!-- Gallery (Full Width Below) -->
+                    <div class="w-full">
+                        <input type="file" id="inp-foto-gallery" accept="image/*" class="hidden">
+                         <label for="inp-foto-gallery" class="w-full py-3 px-4 rounded-xl border border-outline text-onSurfaceVariant bg-surface hover:bg-surfaceVariant transition flex items-center justify-center gap-2 cursor-pointer">
+                            <i data-lucide="image" width="20" height="20"></i> Upload Galeri
+                        </label>
                     </div>
 
                     <div id="preview-container" class="relative hidden-view">
@@ -563,6 +571,7 @@
                 document.getElementById('form-login').addEventListener('submit', (e) => this.handleLogin(e));
                 document.getElementById('form-jurnal').addEventListener('submit', (e) => this.handleSave(e));
                 document.getElementById('inp-foto-gallery').addEventListener('change', (e) => this.handleImage(e));
+                document.getElementById('inp-foto-native').addEventListener('change', (e) => this.handleImage(e)); // Native Camera Handler
                 
                 // Autocomplete Listeners
                 this.setupAutocomplete('inp-kegiatan', 'suggest-kegiatan', 'kegiatan');
@@ -607,7 +616,7 @@
                         video.style.transform = "scaleX(1)";
                     }
                 } catch (err) {
-                    alert("Gagal membuka kamera. Pastikan izin kamera diberikan.");
+                    alert("Gagal membuka kamera app. Silakan gunakan tombol 'Kamera HP' yang berwarna oranye.");
                     console.error(err);
                     this.stopCamera();
                 }
@@ -648,7 +657,7 @@
                 this.setPhotoResult(dataUrl);
             },
             
-            // --- GALLERY LOGIC (Unified with Camera) ---
+            // --- GALLERY & NATIVE CAMERA LOGIC (Unified) ---
             handleImage: function(e) {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -666,13 +675,13 @@
                     const img = new Image();
                     img.onload = () => {
                          const canvas = document.createElement('canvas');
-                         const MAX_WIDTH = 640; // Resize for consistency
+                         const MAX_WIDTH = 800; // Resize for consistency and reduced payload
                          const scaleSize = MAX_WIDTH / img.width;
                          canvas.width = MAX_WIDTH;
                          canvas.height = img.height * scaleSize;
                          const ctx = canvas.getContext('2d');
                          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                         const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+                         const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // slight compression
                          
                          this.setPhotoResult(dataUrl);
                     }
@@ -697,6 +706,7 @@
                 this.currentPhotoBase64 = "";
                 document.getElementById('final-photo-base64').value = "";
                 document.getElementById('inp-foto-gallery').value = "";
+                document.getElementById('inp-foto-native').value = "";
                 document.getElementById('existing-photo-url').value = "";
                 document.getElementById('preview-container').classList.add('hidden-view');
                 document.getElementById('img-preview').src = "";
@@ -1420,7 +1430,10 @@
                         method: 'POST',
                         body: JSON.stringify({ action: 'save', data })
                     }).then(r => r.json());
-                    if(res.success) { this.navigate('dashboard'); } else { alert(res.message); }
+                    if(res.success) { 
+                        this.fetchRefs(); // Refresh suggestions automatically!
+                        this.navigate('dashboard'); 
+                    } else { alert(res.message); }
                 } catch(e) { alert("Error saving"); }
                 
                 this.toggleLoading(false);
