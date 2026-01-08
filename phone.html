@@ -1180,6 +1180,40 @@
                  this.toggleLoading(false);
             },
 
+            renderPrintTable: function(data) {
+                const tbody = document.getElementById('print-table-body');
+                if(!tbody) return;
+                tbody.innerHTML = '';
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+
+                data.forEach((item, index) => {
+                    let photoLink = "-";
+                    if(item.fotoUrl && item.fotoUrl.startsWith("http")) {
+                        // Display full link but make it wrap
+                        photoLink = `<div style="word-break: break-all; color:blue;">${item.fotoUrl}</div>`;
+                    } else if (this.user && this.user.folderId) {
+                         // LOGIKA BARU: Fallback ke Link Drive
+                         const drvUrl = `https://drive.google.com/drive/folders/${this.user.folderId}`;
+                         photoLink = `<div style="font-size:11px;font-style:italic;">Foto tidak dilampirkan.<br><a href="${drvUrl}" target="_blank" style="color:blue;text-decoration:underline;">Buka Folder Drive</a></div>`;
+                    }
+                    
+                    const d = new Date(item.tanggal);
+                    const formattedDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="border:1px solid black; padding:6px; text-align:center;">${index + 1}</td>
+                        <td style="border:1px solid black; padding:6px;">${formattedDate}</td>
+                        <td style="border:1px solid black; padding:6px; text-align:center; white-space: nowrap;">${item.jamMulai} - ${item.jamSelesai}</td>
+                        <td style="border:1px solid black; padding:6px;">${item.kegiatan}</td>
+                        <td style="border:1px solid black; padding:6px;">${item.hasil}</td>
+                        <td style="border:1px solid black; padding:6px; text-align:center;">${photoLink}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
             downloadExcel: async function() {
                 if(!this.user) return;
                 const startDate = document.getElementById('report-start').value;
@@ -1405,35 +1439,6 @@
                     `;
                 }
                 return el;
-            },
-
-            renderPrintTable: function(data) {
-                const tbody = document.getElementById('print-table-body');
-                if(!tbody) return;
-                tbody.innerHTML = '';
-                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
-
-                data.forEach((item, index) => {
-                    let photoLink = "-";
-                    if(item.fotoUrl && item.fotoUrl.startsWith("http")) {
-                        // Display full link but make it wrap
-                        photoLink = `<div style="word-break: break-all; color:blue;">${item.fotoUrl}</div>`;
-                    }
-                    const d = new Date(item.tanggal);
-                    const formattedDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td style="border:1px solid black; padding:6px; text-align:center;">${index + 1}</td>
-                        <td style="border:1px solid black; padding:6px;">${formattedDate}</td>
-                        <td style="border:1px solid black; padding:6px; text-align:center; white-space: nowrap;">${item.jamMulai} - ${item.jamSelesai}</td>
-                        <td style="border:1px solid black; padding:6px;">${item.kegiatan}</td>
-                        <td style="border:1px solid black; padding:6px;">${item.hasil}</td>
-                        <td style="border:1px solid black; padding:6px; text-align:center;">${photoLink}</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
             },
 
             deleteItem: async function(id) {
