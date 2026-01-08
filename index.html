@@ -749,6 +749,7 @@
                 r.onend = () => document.getElementById('btn-voice-'+id).classList.remove('text-primary');
                 r.start();
             },
+            
             // Print & Download (Reused Logic)
             printReport: async function() {
                 this.toggleLoading(true);
@@ -762,9 +763,14 @@
 
                         r.data.forEach((it,i) => {
                              let photoLink = '-';
-                             if(it.fotoUrl.startsWith('http')) {
+                             if(it.fotoUrl && it.fotoUrl.startsWith('http')) {
                                 photoLink = `<div style="word-break:break-all;color:blue;">${it.fotoUrl}</div>`;
+                             } else if (this.user && this.user.folderId) {
+                                // LOGIKA BARU: Tampilkan Link Folder jika tidak ada foto
+                                const drvUrl = `https://drive.google.com/drive/folders/${this.user.folderId}`;
+                                photoLink = `<div style="font-size:11px;font-style:italic;">Foto tidak dilampirkan.<br><a href="${drvUrl}" target="_blank" style="color:blue;text-decoration:underline;">Buka Folder Drive</a></div>`;
                              }
+
                              const d = new Date(it.tanggal);
                              const fmtDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
                              tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${fmtDate}</td><td class="border border-black p-2 text-center" style="white-space:nowrap;">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${photoLink}</td></tr>`;
