@@ -1128,9 +1128,10 @@
                  
                  this.toggleLoading(true);
                  try {
+                    // Added sortAsc: true param
                     const res = await fetch(APPS_SCRIPT_URL, {
                         method: 'POST',
-                        body: JSON.stringify({ action: 'read_history', nip: this.user.nip, startDate, endDate })
+                        body: JSON.stringify({ action: 'read_history', nip: this.user.nip, startDate, endDate, sortAsc: true })
                     }).then(r => r.json());
                     
                     if(res.success && res.data.length > 0) {
