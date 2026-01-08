@@ -755,7 +755,8 @@
                 this.toggleLoading(true);
                 const s = document.getElementById('report-start').value; const e = document.getElementById('report-end').value;
                 try {
-                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'read_history', nip:this.user.nip, startDate:s, endDate:e})}).then(x=>x.json());
+                    // Added sortAsc: true param
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'read_history', nip:this.user.nip, startDate:s, endDate:e, sortAsc:true})}).then(x=>x.json());
                     if(r.success && r.data.length) {
                         const tb = document.getElementById('print-table-body'); tb.innerHTML = '';
                         const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
