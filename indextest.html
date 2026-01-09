@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jurnal Guru - Desktop</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#9c4100',
+                        onPrimary: '#ffffff',
+                        primaryContainer: '#ffdbc8',
+                        onPrimaryContainer: '#341100',
+                        secondary: '#77574e',
+                        secondaryContainer: '#ffdbcc',
+                        onSecondaryContainer: '#2c160f',
+                        surface: '#fff8f6',
+                        onSurface: '#201a18',
+                        surfaceVariant: '#f5ded5',
+                        onSurfaceVariant: '#53433f',
+                        outline: '#85736b',
+                        error: '#ba1a1a',
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'Segoe UI', 'sans-serif'],
+                        serif: ['Times New Roman', 'serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- HTML2PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- HEIC2ANY (Untuk support HEIC/iPhone) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
+
+    <style>
+        .hidden-view { display: none !important; }
+        .suggestion-list {
+            position: absolute; width: 100%; max-height: 200px; overflow-y: auto;
+            background: white; border: 1px solid #ddd; z-index: 50; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .suggestion-item { padding: 8px; cursor: pointer; }
+        .suggestion-item:hover { background: #f0f0f0; }
+        
+        /* Print Styles */
+        #report-container { 
+            background: white; 
+            color: black;
+            font-family: 'Times New Roman', serif; 
+            padding: 40px; 
+            width: 100%;
+            max-width: 1000px; /* Lebar A4 Landscape optimal */
+            margin: 0 auto;
+        }
+        /* Fix Table borders for PDF */
+        #report-container table, #report-container th, #report-container td {
+            border-color: black;
+        }
+    </style>
+</head>
+<body class="bg-surface text-onSurface h-screen flex overflow-hidden font-sans">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loading-overlay" class="hidden-view fixed inset-0 bg-surface/80 z-[70] flex items-center justify-center flex-col backdrop-blur-sm">
+        <div class="animate-spin text-primary mb-4"><i data-lucide="loader-2" width="48" height="48"></i></div>
+        <p class="font-medium">Memproses...</p>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="w-64 bg-surfaceVariant/30 border-r border-surfaceVariant hidden-view flex-col h-full">
+        <div class="p-6 border-b border-surfaceVariant/50">
+            <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+                <i data-lucide="book-open-check"></i> Jurnal Guru
+            </h1>
+            <p class="text-sm text-onSurfaceVariant mt-1" id="sb-user-name">Memuat...</p>
+        </div>
+        
+        <nav class="flex-grow p-4 space-y-2">
+            <button onclick="app.navigate('dashboard')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-secondaryContainer hover:text-onSecondaryContainer transition flex items-center gap-3 font-medium text-onSurfaceVariant nav-btn" data-target="dashboard">
+                <i data-lucide="layout-list"></i> Jurnal Harian
+            </button>
+            <button onclick="app.navigate('calendar')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-secondaryContainer hover:text-onSecondaryContainer transition flex items-center gap-3 font-medium text-onSurfaceVariant nav-btn" data-target="calendar">
+                <i data-lucide="calendar-days"></i> Kalender
+            </button>
+            <button onclick="app.navigate('monitor')" id="nav-monitor" class="hidden-view w-full text-left px-4 py-3 rounded-xl hover:bg-secondaryContainer hover:text-onSecondaryContainer transition flex items-center gap-3 font-medium text-onSurfaceVariant nav-btn" data-target="monitor">
+                <i data-lucide="shield-check"></i> Monitor KS
+            </button>
+             <button onclick="app.navigate('profile')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-secondaryContainer hover:text-onSecondaryContainer transition flex items-center gap-3 font-medium text-onSurfaceVariant nav-btn" data-target="profile">
+                <i data-lucide="user"></i> Profil & Laporan
+            </button>
+        </nav>
+
+        <div class="p-4 border-t border-surfaceVariant/50">
+            <button onclick="app.logout()" class="w-full px-4 py-3 rounded-xl text-error hover:bg-error/10 transition flex items-center gap-3 font-medium">
+                <i data-lucide="log-out"></i> Keluar
+            </button>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-grow flex flex-col h-full overflow-hidden relative">
+        
+        <!-- LOGIN VIEW -->
+        <div id="view-login" class="absolute inset-0 z-50 bg-surface flex items-center justify-center">
+             <div class="w-96 p-8 bg-surface border border-outline/20 rounded-3xl shadow-xl text-center">
+                <div class="w-16 h-16 bg-primaryContainer rounded-2xl mx-auto flex items-center justify-center text-onPrimaryContainer mb-6">
+                    <i data-lucide="lock" width="32" height="32"></i>
+                </div>
+                <h2 class="text-2xl font-bold mb-2">Login Desktop</h2>
+                <p class="text-onSurfaceVariant mb-8">Masukkan PIN Anda</p>
+                <form id="form-login" class="space-y-4">
+                    <input type="password" id="login-pin" class="w-full px-4 py-3 text-center text-2xl tracking-widest border border-outline rounded-xl focus:ring-2 focus:ring-primary outline-none" placeholder="******" maxlength="6" required>
+                    <button type="submit" class="w-full py-3 bg-primary text-onPrimary rounded-xl font-medium hover:bg-primary/90 transition">Masuk</button>
+                </form>
+             </div>
+        </div>
+
+        <!-- DASHBOARD VIEW -->
+        <div id="view-dashboard" class="hidden-view flex flex-col h-full p-6 overflow-hidden">
+            <div class="flex justify-between items-center mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold">Jurnal Kegiatan</h2>
+                    <p class="text-onSurfaceVariant text-sm">Kelola aktivitas harian Anda</p>
+                </div>
+                <div class="flex gap-3">
+                    <select id="filter-month" class="px-4 py-2 bg-surfaceVariant rounded-lg text-sm font-medium outline-none"></select>
+                    <select id="filter-year" class="px-4 py-2 bg-surface border border-outline rounded-lg text-sm font-medium outline-none"></select>
+                    <button onclick="app.createNew()" class="px-4 py-2 bg-primary text-onPrimary rounded-lg flex items-center gap-2 hover:shadow-lg transition">
+                        <i data-lucide="plus"></i> Tambah Baru
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-grow overflow-auto border border-outline/20 rounded-xl bg-white shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surfaceVariant/50 sticky top-0 z-10">
+                        <tr>
+                            <th class="p-4 font-semibold text-sm">Tanggal</th>
+                            <th class="p-4 font-semibold text-sm">Waktu</th>
+                            <th class="p-4 font-semibold text-sm">Kegiatan</th>
+                            <th class="p-4 font-semibold text-sm">Hasil</th>
+                            <th class="p-4 font-semibold text-sm text-center">Foto</th>
+                            <th class="p-4 font-semibold text-sm text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body" class="divide-y divide-gray-100"></tbody>
+                </table>
+                <div id="empty-state" class="hidden-view p-10 text-center text-onSurfaceVariant">Belum ada data.</div>
+            </div>
+        </div>
+        
+        <!-- CALENDAR VIEW -->
+         <div id="view-calendar" class="hidden-view flex flex-col h-full p-6 overflow-hidden">
+             <h2 class="text-2xl font-bold mb-6">Kalender Kegiatan</h2>
+             <div class="flex-grow flex gap-6 overflow-hidden">
+                 <div class="flex-grow bg-white border border-outline/20 rounded-xl p-6 overflow-y-auto">
+                     <div class="grid grid-cols-7 mb-4 text-center font-bold text-onSurfaceVariant">
+                        <div>M</div><div>S</div><div>S</div><div>R</div><div>K</div><div>J</div><div>S</div>
+                    </div>
+                    <div id="calendar-container" class="grid grid-cols-7 gap-2"></div>
+                 </div>
+                 <div class="w-80 bg-surfaceVariant/30 rounded-xl p-4 flex flex-col border border-surfaceVariant">
+                     <h3 class="font-bold mb-4" id="cal-selected-date">Pilih Tanggal</h3>
+                     <div id="cal-day-list" class="space-y-3 overflow-y-auto flex-grow"></div>
+                     <button onclick="app.createForSelectedDate()" id="btn-cal-add" class="hidden-view mt-4 w-full py-2 bg-primary text-onPrimary rounded-lg">Tambah Disini</button>
+                 </div>
+             </div>
+         </div>
+
+        <!-- MONITOR VIEW (KS) -->
+        <div id="view-monitor" class="hidden-view flex flex-col h-full p-6 overflow-hidden">
+             <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold flex items-center gap-2"><i data-lucide="shield-check" class="text-primary"></i> Monitor Kinerja</h2>
+                <div class="flex gap-2">
+                    <select id="admin-filter-guru" onchange="app.fetchAdminHistory()" class="px-3 py-2 border rounded-lg text-sm min-w-[200px]"></select>
+                    <input type="date" id="admin-start" onchange="app.fetchAdminHistory()" class="px-3 py-2 border rounded-lg text-sm">
+                    <input type="date" id="admin-end" onchange="app.fetchAdminHistory()" class="px-3 py-2 border rounded-lg text-sm">
+                </div>
+            </div>
+            <div class="flex-grow overflow-auto border border-outline/20 rounded-xl bg-white shadow-sm">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-surfaceVariant/50 sticky top-0 z-10">
+                        <tr>
+                            <th class="p-4 font-semibold text-sm">Guru</th>
+                            <th class="p-4 font-semibold text-sm">Tanggal</th>
+                            <th class="p-4 font-semibold text-sm">Kegiatan</th>
+                            <th class="p-4 font-semibold text-sm">Hasil</th>
+                            <th class="p-4 font-semibold text-sm text-center">Foto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-body" class="divide-y divide-gray-100"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PROFILE VIEW -->
+        <div id="view-profile" class="hidden-view p-6 max-w-4xl mx-auto w-full overflow-y-auto">
+            <h2 class="text-2xl font-bold mb-6">Profil & Laporan</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Profile Card -->
+                <div class="md:col-span-1 bg-white p-6 rounded-2xl border border-outline/20 shadow-sm text-center">
+                    <div class="w-24 h-24 bg-primaryContainer rounded-full mx-auto flex items-center justify-center text-4xl font-bold text-onPrimaryContainer mb-4">
+                        <span id="prof-initial">G</span>
+                    </div>
+                    <h3 class="text-xl font-bold" id="prof-name">-</h3>
+                    <p class="text-sm text-onSurfaceVariant" id="prof-role">-</p>
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-left space-y-2 text-sm">
+                        <p><span class="font-bold block text-xs uppercase text-gray-500">NIP</span> <span id="prof-nip">-</span></p>
+                        <p><span class="font-bold block text-xs uppercase text-gray-500">Unit Kerja</span> <span id="prof-school">-</span></p>
+                    </div>
+                </div>
+
+                <!-- Report Card -->
+                <div class="md:col-span-2 bg-white p-6 rounded-2xl border border-outline/20 shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 flex items-center gap-2"><i data-lucide="printer"></i> Cetak Laporan</h3>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Dari</label>
+                            <input type="date" id="report-start" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Sampai</label>
+                            <input type="date" id="report-end" class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="app.printReport()" class="flex-1 py-3 bg-primary text-onPrimary rounded-lg font-medium hover:shadow-lg transition">Download PDF</button>
+                        <button onclick="app.downloadExcel()" class="flex-1 py-3 bg-secondaryContainer text-onSecondaryContainer border border-secondary/20 rounded-lg font-medium hover:bg-secondary/20 transition">Download Excel</button>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 text-center text-xs text-gray-400">Jurnal Guru Desktop v2.0</div>
+        </div>
+
+    </main>
+
+    <!-- FORM MODAL -->
+    <div id="modal-form" class="hidden-view fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-surface w-full max-w-2xl rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+            <div class="p-4 border-b border-outline/10 flex justify-between items-center bg-white sticky top-0 z-10">
+                <h3 class="font-bold text-lg" id="form-title">Jurnal Baru</h3>
+                <button onclick="app.closeForm()" class="p-2 hover:bg-gray-100 rounded-full"><i data-lucide="x"></i></button>
+            </div>
+            <form id="form-jurnal" class="p-6 space-y-4">
+                <input type="hidden" id="inp-id">
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Tanggal</label>
+                        <input type="date" id="inp-tanggal" required class="w-full px-3 py-2 border rounded-lg">
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Mulai</label>
+                            <input type="time" id="inp-mulai" required class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Selesai</label>
+                            <input type="time" id="inp-selesai" required class="w-full px-3 py-2 border rounded-lg">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative">
+                     <div class="flex justify-between">
+                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Kegiatan</label>
+                        <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan"><i data-lucide="mic" width="16"></i></button>
+                    </div>
+                    <textarea id="inp-kegiatan" rows="3" required class="w-full px-3 py-2 border rounded-lg resize-none"></textarea>
+                    <div id="suggest-kegiatan" class="suggestion-list hidden-view"></div>
+                </div>
+
+                <div class="relative">
+                    <div class="flex justify-between">
+                        <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Hasil</label>
+                         <button type="button" onclick="app.toggleVoice('hasil')" id="btn-voice-hasil"><i data-lucide="mic" width="16"></i></button>
+                    </div>
+                    <textarea id="inp-hasil" rows="2" required class="w-full px-3 py-2 border rounded-lg resize-none"></textarea>
+                    <div id="suggest-hasil" class="suggestion-list hidden-view"></div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold uppercase text-gray-500 mb-1">Dokumentasi</label>
+                    <div class="flex gap-4 items-start">
+                         <div class="w-32 h-32 bg-gray-100 rounded-lg border border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group cursor-pointer" onclick="document.getElementById('inp-file').click()">
+                            <img id="img-preview" class="w-full h-full object-cover hidden-view">
+                            <div id="img-placeholder" class="text-center text-gray-400 text-xs">
+                                <i data-lucide="image" class="mx-auto mb-1"></i> Upload
+                            </div>
+                         </div>
+                         <div class="space-y-2">
+                             <input type="file" id="inp-file" accept="image/*" class="hidden" onchange="app.handleImage(this)">
+                             <button type="button" onclick="document.getElementById('inp-file').click()" class="px-3 py-2 text-sm bg-white border rounded-lg hover:bg-gray-50">Pilih File</button>
+                             <button type="button" onclick="app.clearImage()" class="px-3 py-2 text-sm text-error hover:bg-red-50 rounded-lg block">Hapus</button>
+                         </div>
+                    </div>
+                    <input type="hidden" id="final-photo-base64">
+                    <input type="hidden" id="existing-photo-url">
+                </div>
+
+                <div class="pt-4 border-t mt-4 flex justify-end gap-3">
+                    <button type="button" onclick="app.closeForm()" class="px-6 py-2 rounded-lg hover:bg-gray-100">Batal</button>
+                    <button type="submit" id="btn-save" class="px-6 py-2 bg-primary text-onPrimary rounded-lg hover:shadow-lg transition">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- PDF HIDDEN CONTAINER -->
+    <div id="report-container" class="hidden-view">
+        <div class="text-center mb-1">
+            <h2 class="font-bold text-xl uppercase tracking-wide">LAPORAN KINERJA HARIAN GURU</h2>
+            <h3 id="print-school-header" class="text-lg font-bold uppercase"></h3>
+            <p id="print-school-address" class="text-sm italic text-gray-700"></p>
+        </div>
+        
+        <!-- Double Border Line -->
+        <div class="border-b-4 border-double border-black mb-6"></div>
+
+        <div class="mb-6 text-sm">
+            <table class="w-full">
+                <tr>
+                    <td class="w-24 font-bold py-0.5">Nama</td>
+                    <td class="py-0.5">: <span class="print-name"></span></td>
+                    <td class="w-8"></td>
+                    <td class="w-24 font-bold py-0.5">Unit Kerja</td>
+                    <td class="py-0.5">: <span class="print-school"></span></td>
+                </tr>
+                <tr>
+                    <td class="font-bold py-0.5">NIP</td>
+                    <td class="py-0.5">: <span class="print-nip"></span></td>
+                    <td></td>
+                    <td class="font-bold py-0.5">Jabatan</td>
+                    <td class="py-0.5">: <span class="print-role"></span></td>
+                </tr>
+                <tr>
+                    <td class="py-0.5"></td>
+                    <td class="py-0.5"></td>
+                    <td></td>
+                    <td class="font-bold py-0.5">Periode</td>
+                    <td class="py-0.5">: <span class="print-period"></span></td>
+                </tr>
+            </table>
+        </div>
+
+        <table class="w-full mb-8 border-collapse border border-black text-xs">
+            <thead>
+                <tr class="bg-gray-100">
+                    <th class="border border-black p-2 w-[5%]">No</th>
+                    <th class="border border-black p-2 w-[15%]">Hari/Tanggal</th>
+                    <th class="border border-black p-2 w-[15%]">Waktu</th>
+                    <th class="border border-black p-2 w-[35%]">Uraian Kegiatan</th>
+                    <th class="border border-black p-2 w-[20%]">Hasil / Output</th>
+                    <th class="border border-black p-2 w-[10%]">Lampiran</th>
+                </tr>
+            </thead>
+            <tbody id="print-table-body"></tbody>
+        </table>
+
+        <div class="flex justify-between px-16 mt-4 page-break-inside-avoid">
+             <div class="text-center w-64">
+                <p class="mb-16">Mengetahui,<br/>Kepala Sekolah</p>
+                <p class="font-bold" style="text-decoration: underline;" id="print-ks-name">...</p>
+                <p class="text-xs">NIP. <span id="print-ks-nip">...</span></p>
+            </div>
+            <div class="text-center w-64">
+                <p class="mb-1"><span id="print-city">...</span>, <span id="print-date">...</span></p>
+                <p class="mb-16 font-bold print-role"></p>
+                <p class="font-bold print-name mb-1" style="text-decoration: underline;"></p>
+                <p class="print-nip-prefix text-xs">NIP. <span class="print-nip"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
+        let APP_CITY = "Jakarta";
+
+        const app = {
+            user: null, history: [], meta: {}, refs: {kegiatan:[], hasil:[]}, teachers: [], isAdmin: false,
+            
+            init: function() {
+                this.initFilters();
+                this.fetchRefs();
+                
+                const stored = localStorage.getItem('jg_user');
+                if (stored) {
+                    this.user = JSON.parse(stored);
+                    if(this.user.kota) APP_CITY = this.user.kota;
+                    this.checkAdminStatus();
+                    this.navigate('dashboard');
+                } else {
+                    this.navigate('login');
+                }
+
+                // Setup Dates
+                const today = new Date().toISOString().split('T')[0];
+                const first = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+                ['report-start','report-end','admin-start','admin-end'].forEach(id => {
+                     const el = document.getElementById(id);
+                     if(el) el.value = id.includes('start') ? first : today;
+                });
+
+                // Listeners
+                document.getElementById('form-login').addEventListener('submit', (e)=>{e.preventDefault(); this.login()});
+                document.getElementById('form-jurnal').addEventListener('submit', (e)=>{e.preventDefault(); this.save()});
+                this.setupAutocomplete('inp-kegiatan', 'suggest-kegiatan', 'kegiatan');
+                this.setupAutocomplete('inp-hasil', 'suggest-hasil', 'hasil');
+                lucide.createIcons();
+            },
+
+            fetchRefs: async function() {
+                try {
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'get_ref'})}).then(r=>r.json());
+                    if(r.success) { 
+                        this.refs = {kegiatan: r.kegiatan, hasil: r.hasil};
+                        if(!this.user && r.city) APP_CITY = r.city;
+                    }
+                } catch(e){}
+            },
+
+            navigate: function(view) {
+                // Hide all views
+                ['login','dashboard','calendar','monitor','profile'].forEach(v => 
+                    document.getElementById(`view-${v}`).classList.add('hidden-view'));
+                document.getElementById('sidebar').classList.add('hidden-view');
+
+                if(view !== 'login') {
+                    document.getElementById('sidebar').classList.remove('hidden-view');
+                    document.getElementById(`view-${view}`).classList.remove('hidden-view');
+                    this.updateNav(view);
+                    this.updateUserUI();
+                    if(view === 'dashboard' || view === 'calendar') this.fetchHistory();
+                    if(view === 'monitor') this.fetchAdminHistory();
+                } else {
+                    document.getElementById('view-login').classList.remove('hidden-view');
+                }
+                lucide.createIcons();
+            },
+
+            updateNav: function(target) {
+                document.querySelectorAll('.nav-btn').forEach(b => {
+                    b.classList.remove('bg-secondaryContainer', 'text-onSecondaryContainer');
+                    if(b.dataset.target === target) b.classList.add('bg-secondaryContainer', 'text-onSecondaryContainer');
+                });
+            },
+
+            updateUserUI: function() {
+                if(!this.user) return;
+                const els = {
+                    'sb-user-name': this.user.nama, 'prof-name': this.user.nama, 'prof-initial': this.user.nama[0],
+                    'prof-role': this.user.role, 'prof-nip': this.user.nip, 'prof-school': this.user.sekolah,
+                    'print-school-header': this.user.sekolah
+                };
+                for(let k in els) { const el = document.getElementById(k); if(el) el.innerText = els[k]; }
+                document.querySelectorAll('.print-name').forEach(e=>e.innerText=this.user.nama);
+                document.querySelectorAll('.print-nip').forEach(e=>e.innerText=this.user.nip);
+                document.querySelectorAll('.print-role').forEach(e=>e.innerText=this.user.role || 'Guru'); 
+                document.querySelectorAll('.print-school').forEach(e=>e.innerText=this.user.sekolah);
+                
+                // Set Address
+                const addrEl = document.getElementById('print-school-address');
+                if(addrEl) addrEl.innerText = this.user.alamat || '';
+            },
+
+            login: async function() {
+                this.toggleLoading(true);
+                const pin = document.getElementById('login-pin').value;
+                try {
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'login', pin})}).then(x=>x.json());
+                    if(r.success) {
+                        this.user = r.user;
+                        localStorage.setItem('jg_user', JSON.stringify(this.user));
+                        if(this.user.kota) APP_CITY = this.user.kota;
+                        this.checkAdminStatus();
+                        this.navigate('dashboard');
+                    } else alert(r.message);
+                } catch(e){alert("Error Login")}
+                this.toggleLoading(false);
+            },
+
+            logout: function() {
+                if(confirm("Keluar aplikasi?")) {
+                    localStorage.removeItem('jg_user');
+                    this.user = null;
+                    this.navigate('login');
+                }
+            },
+
+            fetchHistory: async function() {
+                if(!this.user) return;
+                this.toggleLoading(true);
+                const m = document.getElementById('filter-month').value;
+                const y = document.getElementById('filter-year').value;
+                try {
+                    const r = await fetch(APPS_SCRIPT_URL, {
+                        method:'POST', body:JSON.stringify({action:'read_history', nip:this.user.nip, month:m, year:y})
+                    }).then(x=>x.json());
+                    if(r.success) {
+                        this.history = r.data;
+                        this.meta = r.meta;
+                        this.renderTable(r.data);
+                        this.renderCalendar();
+                    }
+                } catch(e){}
+                this.toggleLoading(false);
+            },
+
+            renderTable: function(data) {
+                const tbody = document.getElementById('table-body');
+                tbody.innerHTML = '';
+                document.getElementById('empty-state').classList.toggle('hidden-view', data.length > 0);
+                
+                data.forEach(item => {
+                    let photoHtml = `<span class="text-gray-400 text-xs">-</span>`;
+                    if(item.fotoUrl && item.fotoUrl.startsWith('http')) {
+                        photoHtml = `<a href="${item.fotoUrl}" target="_blank" class="text-primary hover:underline flex justify-center"><i data-lucide="image" width="16"></i></a>`;
+                    }
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-gray-50 border-b border-gray-100 last:border-0";
+                    tr.innerHTML = `
+                        <td class="p-4 text-sm whitespace-nowrap">${item.tanggal}</td>
+                         <td class="p-4 text-sm whitespace-nowrap"><span class="bg-gray-100 px-2 py-1 rounded text-xs font-bold">${item.jamMulai} - ${item.jamSelesai}</span></td>
+                        <td class="p-4 text-sm font-medium">${item.kegiatan}</td>
+                        <td class="p-4 text-sm text-gray-600">${item.hasil}</td>
+                        <td class="p-4 text-center">${photoHtml}</td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="app.editItem('${encodeURIComponent(JSON.stringify(item))}')" class="p-2 text-blue-600 hover:bg-blue-50 rounded"><i data-lucide="pencil" width="16"></i></button>
+                                <button onclick="app.deleteItem('${item.id}')" class="p-2 text-red-600 hover:bg-red-50 rounded"><i data-lucide="trash-2" width="16"></i></button>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+                lucide.createIcons();
+            },
+            
+            // --- CALENDAR LOGIC (Simplified from Mobile) ---
+            renderCalendar: function() {
+                 const m = parseInt(document.getElementById('filter-month').value)-1;
+                 const y = parseInt(document.getElementById('filter-year').value);
+                 const c = document.getElementById('calendar-container');
+                 c.innerHTML = '';
+                 const first = new Date(y, m, 1).getDay();
+                 const days = new Date(y, m+1, 0).getDate();
+                 
+                 for(let i=0; i<first; i++) c.appendChild(document.createElement('div'));
+                 for(let i=1; i<=days; i++) {
+                     const dStr = `${y}-${String(m+1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
+                     const has = this.history.some(h => h.tanggal === dStr);
+                     const el = document.createElement('div');
+                     el.className = `h-14 border rounded-lg flex items-center justify-center cursor-pointer hover:bg-primary/5 relative ${has ? 'font-bold text-primary border-primary/30' : 'bg-gray-50 text-gray-400'}`;
+                     el.innerHTML = `<span>${i}</span>${has ? '<span class="absolute bottom-2 w-1.5 h-1.5 bg-primary rounded-full"></span>' : ''}`;
+                     el.onclick = () => {
+                         document.getElementById('cal-selected-date').innerText = new Date(dStr).toLocaleDateString('id-ID',{dateStyle:'full'});
+                         const items = this.history.filter(h => h.tanggal === dStr);
+                         const list = document.getElementById('cal-day-list');
+                         list.innerHTML = items.length ? '' : '<div class="text-gray-400 text-sm">Tidak ada kegiatan</div>';
+                         items.forEach(it => {
+                             list.innerHTML += `<div class="p-3 bg-white border rounded text-sm"><div class="font-bold text-primary text-xs mb-1">${it.jamMulai}</div>${it.kegiatan}</div>`;
+                         });
+                         document.getElementById('btn-cal-add').classList.remove('hidden-view');
+                         document.getElementById('btn-cal-add').onclick = () => { this.createNew(); document.getElementById('inp-tanggal').value = dStr; }
+                     };
+                     c.appendChild(el);
+                 }
+            },
+
+            // --- ADMIN MONITOR ---
+            checkAdminStatus: function() {
+                if(!this.user) return;
+                const r = (this.user.role||"").toLowerCase();
+                this.isAdmin = r.includes("kepala") || r === "ks";
+                if(this.isAdmin) {
+                    document.getElementById('nav-monitor').classList.remove('hidden-view');
+                    this.fetchTeachers();
+                }
+            },
+            fetchTeachers: async function() {
+                try {
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'get_teachers'})}).then(x=>x.json());
+                    if(r.success) {
+                        const sel = document.getElementById('admin-filter-guru');
+                        sel.innerHTML = '<option value="">Semua Guru</option>';
+                        r.data.forEach(t => sel.innerHTML += `<option value="${t.nip}">${t.nama}</option>`);
+                    }
+                } catch(e){}
+            },
+            fetchAdminHistory: async function() {
+                if(!this.isAdmin) return;
+                this.toggleLoading(true);
+                const body = {
+                    action:'read_history', nip:this.user.nip, asAdmin:true,
+                    targetNip: document.getElementById('admin-filter-guru').value,
+                    startDate: document.getElementById('admin-start').value,
+                    endDate: document.getElementById('admin-end').value
+                };
+                try {
+                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(body)}).then(x=>x.json());
+                     if(r.success) {
+                         const tb = document.getElementById('admin-body');
+                         tb.innerHTML = r.data.length ? '' : '<tr><td colspan="5" class="p-4 text-center text-gray-400">Tidak ada data</td></tr>';
+                         r.data.forEach(it => {
+                             let ph = it.fotoUrl.startsWith('http') ? `<a href="${it.fotoUrl}" target="_blank" class="text-primary"><i data-lucide="image" width="16"></i></a>` : '-';
+                             tb.innerHTML += `<tr><td class="p-3 text-sm font-bold text-primary">${it.nama}</td><td class="p-3 text-sm">${it.tanggal}<br><span class="text-xs text-gray-500">${it.jamMulai}</span></td><td class="p-3 text-sm">${it.kegiatan}</td><td class="p-3 text-sm">${it.hasil}</td><td class="p-3 text-center">${ph}</td></tr>`;
+                         });
+                         lucide.createIcons();
+                     }
+                } catch(e){}
+                this.toggleLoading(false);
+            },
+
+            // --- FORM ACTIONS ---
+            createNew: function() {
+                document.getElementById('form-title').innerText = "Jurnal Baru";
+                document.getElementById('form-jurnal').reset();
+                document.getElementById('inp-id').value = "";
+                document.getElementById('inp-tanggal').value = new Date().toISOString().split('T')[0];
+                this.clearImage();
+                document.getElementById('modal-form').classList.remove('hidden-view');
+            },
+            closeForm: function() { document.getElementById('modal-form').classList.add('hidden-view'); },
+            editItem: function(str) {
+                const it = JSON.parse(decodeURIComponent(str));
+                this.createNew();
+                document.getElementById('form-title').innerText = "Edit Jurnal";
+                document.getElementById('inp-id').value = it.id;
+                document.getElementById('inp-tanggal').value = it.tanggal;
+                document.getElementById('inp-mulai').value = it.jamMulai;
+                document.getElementById('inp-selesai').value = it.jamSelesai;
+                document.getElementById('inp-kegiatan').value = it.kegiatan;
+                document.getElementById('inp-hasil').value = it.hasil;
+                if(it.fotoUrl && it.fotoUrl.startsWith('http')) {
+                    document.getElementById('existing-photo-url').value = it.fotoUrl;
+                    document.getElementById('img-preview').src = it.fotoUrl;
+                    document.getElementById('img-preview').classList.remove('hidden-view');
+                    document.getElementById('img-placeholder').classList.add('hidden-view');
+                }
+            },
+            save: async function() {
+                this.toggleLoading(true);
+                const data = {
+                    id: document.getElementById('inp-id').value, nip: this.user.nip, nama: this.user.nama,
+                    tanggal: document.getElementById('inp-tanggal').value, jamMulai: document.getElementById('inp-mulai').value,
+                    jamSelesai: document.getElementById('inp-selesai').value, kegiatan: document.getElementById('inp-kegiatan').value,
+                    hasil: document.getElementById('inp-hasil').value,
+                    foto: document.getElementById('final-photo-base64').value || document.getElementById('existing-photo-url').value
+                };
+                try {
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'save', data})}).then(x=>x.json());
+                    if(r.success) { 
+                        this.closeForm(); 
+                        this.fetchHistory(); 
+                        this.fetchRefs(); // Refresh suggestions automatically!
+                    } else alert(r.message);
+                } catch(e){alert("Gagal simpan")}
+                this.toggleLoading(false);
+            },
+            deleteItem: async function(id) {
+                if(!confirm("Hapus?")) return;
+                this.toggleLoading(true);
+                try {
+                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'delete', id})}).then(x=>x.json());
+                     if(r.success) this.fetchHistory();
+                } catch(e){}
+                this.toggleLoading(false);
+            },
+
+            // --- HELPERS ---
+            toggleLoading: function(show) { document.getElementById('loading-overlay').classList.toggle('hidden-view', !show); },
+            initFilters: function() {
+                const m = document.getElementById('filter-month');
+                const y = document.getElementById('filter-year');
+                if(!m) return;
+                ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"].forEach((x,i)=>{
+                    const o = document.createElement('option'); o.value=i+1; o.text=x; if(i===new Date().getMonth()) o.selected=true;
+                    m.appendChild(o);
+                });
+                const curY = new Date().getFullYear();
+                for(let i=curY-1; i<=curY+1; i++) {
+                     const o = document.createElement('option'); o.value=i; o.text=i; if(i===curY) o.selected=true;
+                     y.appendChild(o);
+                }
+                m.onchange = ()=>this.fetchHistory(); y.onchange = ()=>this.fetchHistory();
+            },
+            handleImage: async function(inp) {
+                let file = inp.files[0];
+                if(!file) return;
+                
+                // Cek ukuran awal
+                if(file.size > 10*1024*1024) { alert("Max 10MB"); return; }
+
+                this.toggleLoading(true);
+
+                try {
+                    // Cek jika HEIC
+                    if(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+                        try {
+                            const blob = await heic2any({
+                                blob: file,
+                                toType: "image/jpeg",
+                                quality: 0.8
+                            });
+                            // heic2any bisa return array jika multiple, ambil yg pertama
+                            file = Array.isArray(blob) ? blob[0] : blob;
+                        } catch(err) {
+                            alert("Gagal konversi HEIC: " + err.message);
+                            this.toggleLoading(false);
+                            return;
+                        }
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                             const cvs = document.createElement('canvas');
+                             const sc = 800/img.width;
+                             cvs.width = 800; cvs.height = img.height*sc;
+                             cvs.getContext('2d').drawImage(img,0,0,cvs.width,cvs.height);
+                             const b64 = cvs.toDataURL('image/jpeg', 0.6);
+                             
+                             document.getElementById('final-photo-base64').value = b64;
+                             document.getElementById('img-preview').src = b64;
+                             document.getElementById('img-preview').classList.remove('hidden-view');
+                             document.getElementById('img-placeholder').classList.add('hidden-view');
+                             
+                             this.toggleLoading(false);
+                        };
+                        img.src = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                } catch(e) {
+                    alert("Error process image");
+                    this.toggleLoading(false);
+                }
+            },
+            clearImage: function() {
+                document.getElementById('final-photo-base64').value = "";
+                document.getElementById('existing-photo-url').value = "";
+                document.getElementById('inp-file').value = "";
+                document.getElementById('img-preview').classList.add('hidden-view');
+                document.getElementById('img-placeholder').classList.remove('hidden-view');
+            },
+             setupAutocomplete: function(id, listId, key) {
+                const inp = document.getElementById(id); const lst = document.getElementById(listId);
+                inp.oninput = () => {
+                    const v = inp.value.toLowerCase();
+                    if(v.length < 2) { lst.classList.add('hidden-view'); return; }
+                    const m = this.refs[key].filter(x => x.toLowerCase().includes(v));
+                    lst.innerHTML = '';
+                    if(m.length) {
+                        m.forEach(x => {
+                             const d = document.createElement('div'); d.className='suggestion-item'; d.innerText=x;
+                             d.onclick=()=>{inp.value=x; lst.classList.add('hidden-view');}
+                             lst.appendChild(d);
+                        });
+                        lst.classList.remove('hidden-view');
+                    } else lst.classList.add('hidden-view');
+                };
+                document.onclick = (e) => { if(e.target!==inp && e.target!==lst) lst.classList.add('hidden-view'); }
+            },
+            toggleVoice: function(id) {
+                if(!('webkitSpeechRecognition' in window)) return alert("Tidak support voice");
+                const r = new window.webkitSpeechRecognition();
+                r.lang='id-ID';
+                document.getElementById('btn-voice-'+id).classList.add('text-primary');
+                r.onresult = (e) => {
+                     const t = e.results[0][0].transcript;
+                     const el = document.getElementById('inp-'+id);
+                     el.value = el.value ? el.value + ' ' + t : t;
+                };
+                r.onend = () => document.getElementById('btn-voice-'+id).classList.remove('text-primary');
+                r.start();
+            },
+            
+            // Print & Download (Reused Logic)
+            printReport: async function() {
+                this.toggleLoading(true);
+                const s = document.getElementById('report-start').value; const e = document.getElementById('report-end').value;
+                try {
+                    // Added sortAsc: true param
+                    const r = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'read_history', nip:this.user.nip, startDate:s, endDate:e, sortAsc:true})}).then(x=>x.json());
+                    if(r.success && r.data.length) {
+                        const tb = document.getElementById('print-table-body'); tb.innerHTML = '';
+                        const days = ['Minggu','Senin','Selasa','Rabu','Kamis','Jumat','Sabtu'];
+                        const months = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+
+                        r.data.forEach((it,i) => {
+                             let photoLink = '-';
+                             if(it.fotoUrl && it.fotoUrl.startsWith('http')) {
+                                photoLink = `<div style="word-break:break-all;color:blue;">${it.fotoUrl}</div>`;
+                             } else if (this.user && this.user.folderId) {
+                                // LOGIKA BARU: Tampilkan Link Folder jika tidak ada foto
+                                const drvUrl = `https://drive.google.com/drive/folders/${this.user.folderId}`;
+                                photoLink = `<div style="font-size:11px;font-style:italic;">Foto tidak dilampirkan.<br><a href="${drvUrl}" target="_blank" style="color:blue;text-decoration:underline;">Buka Folder Drive</a></div>`;
+                             }
+
+                             const d = new Date(it.tanggal);
+                             const fmtDate = `${days[d.getDay()]}, ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+                             tb.innerHTML += `<tr><td class="border border-black p-2 text-center">${i+1}</td><td class="border border-black p-2">${fmtDate}</td><td class="border border-black p-2 text-center" style="white-space:nowrap;">${it.jamMulai}-${it.jamSelesai}</td><td class="border border-black p-2">${it.kegiatan}</td><td class="border border-black p-2">${it.hasil}</td><td class="border border-black p-2 text-center">${photoLink}</td></tr>`;
+                        });
+                        document.getElementById('print-ks-name').innerText = r.meta.ksName;
+                        document.getElementById('print-ks-nip').innerText = r.meta.ksNip;
+                        document.getElementById('print-city').innerText = APP_CITY;
+                        
+                        // --- NEW: SET SCHOOL ADDRESS ---
+                        if(this.user && this.user.alamat) {
+                             document.getElementById('print-school-address').innerText = this.user.alamat;
+                        }
+
+                        const now = new Date();
+                        document.getElementById('print-date').innerText = `${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+                        
+                        // Format Period dd-mm-yyyy
+                        const fmtP = (d) => { const x=new Date(d); return `${String(x.getDate()).padStart(2,'0')}-${String(x.getMonth()+1).padStart(2,'0')}-${x.getFullYear()}`; };
+                        document.querySelector('.print-period').innerText = `${fmtP(s)} s.d. ${fmtP(e)}`;
+
+                        const el = document.getElementById('report-container');
+                        el.classList.remove('hidden-view');
+                        await html2pdf().set({margin:0.3, filename:`Laporan_${this.user.nama}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4', orientation:'landscape'}}).from(el).save();
+                        el.classList.add('hidden-view');
+                    } else alert("Tidak ada data");
+                } catch(err){alert("Gagal print")}
+                this.toggleLoading(false);
+            },
+            downloadExcel: async function() {
+                this.toggleLoading(true);
+                const s = document.getElementById('report-start').value; const e = document.getElementById('report-end').value;
+                try {
+                     const res = await fetch(APPS_SCRIPT_URL, {method:'POST',body:JSON.stringify({action:'download_excel_formal', nip:this.user.nip, startDate:s, endDate:e})}).then(x=>x.json());
+                     if(res.success && res.base64) {
+                         const byteCharacters = atob(res.base64);
+                         const byteNumbers = new Array(byteCharacters.length);
+                         for (let i = 0; i < byteCharacters.length; i++) { byteNumbers[i] = byteCharacters.charCodeAt(i); }
+                         const byteArray = new Uint8Array(byteNumbers);
+                         const blob = new Blob([byteArray], {type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"});
+                         const uri = URL.createObjectURL(blob);
+                         const a = document.createElement("a"); a.href=uri; a.download=res.filename || "Laporan.xlsx";
+                         document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                     } else alert("Gagal download: " + res.message);
+                } catch(err){alert("Error download")}
+                this.toggleLoading(false);
+            }
+        };
+        document.addEventListener('DOMContentLoaded', ()=>app.init());
+    </script>
+</body>
+</html>
