@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jurnal Guru - Desktop</title>
+    <title>Jurnal SDN 3 Krisak</title>
+    <link rel="icon" href="https://i.imgur.com/NIlN3oW.png" type="image/png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -52,7 +53,7 @@
         
         /* Official Logo Placeholder Logic */
         .logo-placeholder {
-            background-image: url('https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/Logo_of_Ministry_of_Education_and_Culture_of_Republic_of_Indonesia.svg/800px-Logo_of_Ministry_of_Education_and_Culture_of_Republic_of_Indonesia.svg.png');
+            background-image: url('https://i.imgur.com/NIlN3oW.png');
             background-size: contain;
             background-repeat: no-repeat;
             background-position: center;
@@ -82,12 +83,13 @@
     </div>
 
     <!-- SIDEBAR -->
-    <aside id="sidebar" class="w-64 bg-white border-r border-surfaceVariant hidden-view flex-col h-full shadow-sm z-20">
+    <!-- Added flex-shrink-0 to prevent sidebar from squishing on large tables -->
+    <aside id="sidebar" class="w-64 flex-shrink-0 bg-white border-r border-surfaceVariant hidden-view flex-col h-full shadow-sm z-20">
         <div class="p-6 border-b border-surfaceVariant flex items-center gap-3 bg-primary text-white">
-            <div class="w-10 h-10 bg-white rounded-full p-1 logo-placeholder"></div>
+            <div class="w-12 h-12 bg-white rounded-full p-1 logo-placeholder flex-shrink-0"></div>
             <div>
-                <h1 class="text-lg font-bold leading-tight">Jurnal Guru</h1>
-                <p class="text-xs opacity-80">Indonesia Maju</p>
+                <h1 class="text-sm font-bold leading-tight">SDN 3 Krisak</h1>
+                <p class="text-[10px] opacity-90 leading-tight mt-0.5">Berakhlak Cerdas Berprestasi</p>
             </div>
         </div>
         
@@ -131,8 +133,8 @@
                     <div class="w-16 h-16 bg-white rounded-full p-1 shadow-lg logo-placeholder"></div>
                 </div>
                 <div class="p-8 text-center">
-                    <h2 class="text-xl font-bold text-gray-800">Sistem Jurnal Guru</h2>
-                    <p class="text-gray-500 text-sm mb-8">Masuk untuk mengelola kinerja</p>
+                    <h2 class="text-xl font-bold text-gray-800">SD Negeri 3 Krisak</h2>
+                    <p class="text-primary font-bold text-xs uppercase mb-8 tracking-wider">Berakhlak Cerdas Berprestasi</p>
                     <form id="form-login" class="space-y-5">
                         <div class="text-left">
                             <label class="text-xs font-bold text-gray-500 uppercase ml-1">PIN Akses</label>
@@ -142,7 +144,7 @@
                     </form>
                 </div>
                 <div class="bg-gray-50 p-4 text-center text-xs text-gray-400 border-t">
-                    &copy; 2024 Dinas Pendidikan
+                    &copy; 2024 SD Negeri 3 Krisak
                 </div>
              </div>
         </div>
@@ -305,7 +307,7 @@
             </div>
             <div class="mt-8 text-center text-xs text-gray-400 flex items-center justify-center gap-2">
                 <div class="w-4 h-4 logo-placeholder grayscale opacity-50"></div>
-                Jurnal Guru Desktop v2.4 (Official Theme)
+                Jurnal Guru Desktop v2.4 (SDN 3 Krisak)
             </div>
         </div>
 
