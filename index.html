@@ -37,6 +37,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- HTML2PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- HEIC2ANY (Untuk support HEIC/iPhone) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 
     <style>
         .hidden-view { display: none !important; }
@@ -689,27 +691,58 @@
                 }
                 m.onchange = ()=>this.fetchHistory(); y.onchange = ()=>this.fetchHistory();
             },
-            handleImage: function(inp) {
-                const file = inp.files[0];
+            handleImage: async function(inp) {
+                let file = inp.files[0];
                 if(!file) return;
-                if(file.size > 5*1024*1024) { alert("Max 5MB"); return; }
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                         const cvs = document.createElement('canvas');
-                         const sc = 800/img.width;
-                         cvs.width = 800; cvs.height = img.height*sc;
-                         cvs.getContext('2d').drawImage(img,0,0,cvs.width,cvs.height);
-                         const b64 = cvs.toDataURL('image/jpeg', 0.6);
-                         document.getElementById('final-photo-base64').value = b64;
-                         document.getElementById('img-preview').src = b64;
-                         document.getElementById('img-preview').classList.remove('hidden-view');
-                         document.getElementById('img-placeholder').classList.add('hidden-view');
+                
+                // Cek ukuran awal
+                if(file.size > 10*1024*1024) { alert("Max 10MB"); return; }
+
+                this.toggleLoading(true);
+
+                try {
+                    // Cek jika HEIC
+                    if(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
+                        try {
+                            const blob = await heic2any({
+                                blob: file,
+                                toType: "image/jpeg",
+                                quality: 0.8
+                            });
+                            // heic2any bisa return array jika multiple, ambil yg pertama
+                            file = Array.isArray(blob) ? blob[0] : blob;
+                        } catch(err) {
+                            alert("Gagal konversi HEIC: " + err.message);
+                            this.toggleLoading(false);
+                            return;
+                        }
+                    }
+
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        const img = new Image();
+                        img.onload = () => {
+                             const cvs = document.createElement('canvas');
+                             const sc = 800/img.width;
+                             cvs.width = 800; cvs.height = img.height*sc;
+                             cvs.getContext('2d').drawImage(img,0,0,cvs.width,cvs.height);
+                             const b64 = cvs.toDataURL('image/jpeg', 0.6);
+                             
+                             document.getElementById('final-photo-base64').value = b64;
+                             document.getElementById('img-preview').src = b64;
+                             document.getElementById('img-preview').classList.remove('hidden-view');
+                             document.getElementById('img-placeholder').classList.add('hidden-view');
+                             
+                             this.toggleLoading(false);
+                        };
+                        img.src = e.target.result;
                     };
-                    img.src = e.target.result;
-                };
-                reader.readAsDataURL(file);
+                    reader.readAsDataURL(file);
+
+                } catch(e) {
+                    alert("Error process image");
+                    this.toggleLoading(false);
+                }
             },
             clearImage: function() {
                 document.getElementById('final-photo-base64').value = "";
