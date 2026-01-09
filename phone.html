@@ -389,11 +389,11 @@
                 <div class="grid grid-cols-2 gap-4">
                      <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Mulai</label>
-                        <input type="time" id="inp-mulai" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none transition-all">
+                        <input type="time" id="inp-mulai" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none transition-all">
                      </div>
                      <div>
                         <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Selesai</label>
-                        <input type="time" id="inp-selesai" required class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none transition-all">
+                        <input type="time" id="inp-selesai" class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none transition-all">
                      </div>
                 </div>
             </div>
@@ -1034,12 +1034,12 @@
                 this.renderDayList(dateStr);
             },
             renderDayList: function(dateStr) {
-                const dayData = this.history.filter(h => h.tanggal === dateStr);
+                const items = this.history.filter(h => h.tanggal === dateStr);
                 const container = document.getElementById('calendar-day-list');
                 document.getElementById('btn-add-date').classList.remove('hidden-view');
                 container.innerHTML = '';
-                if (dayData.length === 0) container.innerHTML = `<div class="text-xs text-center text-slate-400 py-6 italic opacity-70">Tidak ada kegiatan.</div>`;
-                else dayData.forEach(item => container.appendChild(this.createListItem(item, true)));
+                if (items.length === 0) container.innerHTML = `<div class="text-xs text-center text-slate-400 py-6 italic opacity-70">Tidak ada kegiatan.</div>`;
+                else items.forEach(item => container.appendChild(this.createListItem(item, true)));
                 lucide.createIcons();
             },
             createForSelectedDate: function() { if(this.selectedDate) { this.resetForm(); document.getElementById('inp-tanggal').value = this.selectedDate; this.navigate('form'); } },
@@ -1063,6 +1063,10 @@
                     attachmentHtml = `<button onclick="app.viewImage('${item.fotoUrl}')" class="text-primary hover:text-orange-700 bg-orange-50 p-1.5 rounded-full transition-transform hover:scale-110 shadow-sm"><i data-lucide="image" width="14" height="14"></i></button>`;
                 }
 
+                const timeLabel = (item.jamMulai && item.jamSelesai) 
+                    ? `${item.jamMulai} - ${item.jamSelesai}` 
+                    : "Waktu belum diisi";
+
                 const el = document.createElement('div');
                 // Estetik: White card, Rounded, Left Accent Border, Shadow
                 el.className = "relative bg-white p-5 rounded-2xl shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] border border-slate-100 group overflow-hidden transition-all hover:shadow-orange-100 mb-4";
@@ -1085,7 +1089,7 @@
                         <!-- Footer: Time & Actions -->
                         <div class="flex justify-between items-center border-t border-slate-50 pt-3 mt-2">
                             <span class="px-2.5 py-1 rounded-lg bg-orange-50 text-primary text-[10px] font-bold border border-orange-100 flex items-center gap-1">
-                                <i data-lucide="clock" width="10"></i> ${item.jamMulai} - ${item.jamSelesai}
+                                <i data-lucide="clock" width="10"></i> ${timeLabel}
                             </span>
                             
                             <div class="flex items-center gap-1">
