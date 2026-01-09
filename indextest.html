@@ -438,7 +438,10 @@
                     this.updateNav(view);
                     this.updateUserUI();
                     if(view === 'dashboard' || view === 'calendar') this.fetchHistory();
-                    if(view === 'monitor') this.fetchAdminHistory();
+                    if(view === 'monitor') {
+                        // Jangan auto fetch untuk monitor di arsitektur baru
+                        document.getElementById('admin-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Silakan pilih guru terlebih dahulu</td></tr>';
+                    }
                 } else {
                     document.getElementById('view-login').classList.remove('hidden-view');
                 }
@@ -589,17 +592,23 @@
                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'get_teachers'})}).then(x=>x.json());
                     if(r.success) {
                         const sel = document.getElementById('admin-filter-guru');
-                        sel.innerHTML = '<option value="">Semua Guru</option>';
+                        sel.innerHTML = '<option value="">-- Pilih Guru --</option>';
                         r.data.forEach(t => sel.innerHTML += `<option value="${t.nip}">${t.nama}</option>`);
                     }
                 } catch(e){}
             },
             fetchAdminHistory: async function() {
                 if(!this.isAdmin) return;
+                const targetNip = document.getElementById('admin-filter-guru').value;
+                if(!targetNip) {
+                    document.getElementById('admin-body').innerHTML = '<tr><td colspan="5" class="p-4 text-center text-gray-400">Silakan pilih guru terlebih dahulu</td></tr>';
+                    return;
+                }
+
                 this.toggleLoading(true);
                 const body = {
                     action:'read_history', nip:this.user.nip, asAdmin:true,
-                    targetNip: document.getElementById('admin-filter-guru').value,
+                    targetNip: targetNip,
                     startDate: document.getElementById('admin-start').value,
                     endDate: document.getElementById('admin-end').value
                 };
@@ -607,12 +616,14 @@
                      const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify(body)}).then(x=>x.json());
                      if(r.success) {
                          const tb = document.getElementById('admin-body');
-                         tb.innerHTML = r.data.length ? '' : '<tr><td colspan="5" class="p-4 text-center text-gray-400">Tidak ada data</td></tr>';
+                         tb.innerHTML = r.data.length ? '' : '<tr><td colspan="5" class="p-4 text-center text-gray-400">'+ (r.message || 'Tidak ada data') +'</td></tr>';
                          r.data.forEach(it => {
                              let ph = it.fotoUrl.startsWith('http') ? `<a href="${it.fotoUrl}" target="_blank" class="text-primary"><i data-lucide="image" width="16"></i></a>` : '-';
                              tb.innerHTML += `<tr><td class="p-3 text-sm font-bold text-primary">${it.nama}</td><td class="p-3 text-sm">${it.tanggal}<br><span class="text-xs text-gray-500">${it.jamMulai}</span></td><td class="p-3 text-sm">${it.kegiatan}</td><td class="p-3 text-sm">${it.hasil}</td><td class="p-3 text-center">${ph}</td></tr>`;
                          });
                          lucide.createIcons();
+                     } else {
+                         document.getElementById('admin-body').innerHTML = `<tr><td colspan="5" class="p-4 text-center text-red-500">${r.message}</td></tr>`;
                      }
                 } catch(e){}
                 this.toggleLoading(false);
@@ -668,7 +679,8 @@
                 if(!confirm("Hapus?")) return;
                 this.toggleLoading(true);
                 try {
-                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'delete', id})}).then(x=>x.json());
+                     // Pass user.nip to backend for deleting from correct sheet
+                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'delete', id, nip: this.user.nip})}).then(x=>x.json());
                      if(r.success) this.fetchHistory();
                 } catch(e){}
                 this.toggleLoading(false);
