@@ -67,9 +67,40 @@
         .calendar-day { cursor: pointer; transition: all 0.2s; }
         .calendar-day.selected { background-color: #FF9000; color: white; border-color: #FF9000; box-shadow: 0 4px 10px rgba(255, 144, 0, 0.3); }
         .calendar-day.has-data:not(.selected) { background-color: #fff7ed; color: #ea580c; border-color: #fdba74; font-weight: bold; }
+
+        /* Toast Notifications */
+        #toast-container {
+            position: fixed; top: 24px; right: 24px; z-index: 100;
+            display: flex; flex-direction: column; gap: 12px; pointer-events: none;
+        }
+        .toast {
+            background: white; border-radius: 12px; padding: 16px 20px;
+            box-shadow: 0 10px 30px -5px rgba(0,0,0,0.1); border: 1px solid #f1f5f9;
+            display: flex; align-items: flex-start; gap: 12px;
+            width: 320px; pointer-events: auto;
+            animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative; overflow: hidden;
+        }
+        .toast::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+        }
+        .toast.success::before { background: #10b981; }
+        .toast.error::before { background: #ef4444; }
+        .toast.info::before { background: #3b82f6; }
+        
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(50px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; transform: translateX(20px); }
+        }
     </style>
 </head>
 <body class="bg-surface text-onSurface h-screen flex overflow-hidden font-sans selection:bg-orange-200 selection:text-orange-900">
+
+    <!-- TOAST CONTAINER -->
+    <div id="toast-container"></div>
 
     <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/90 z-[70] flex items-center justify-center flex-col backdrop-blur-sm">
@@ -472,7 +503,7 @@
         let APP_CITY = "Jakarta";
 
         const app = {
-            user: null, history: [], meta: {}, refs: {kegiatan:[], hasil:[]}, teachers: [], isAdmin: false,
+            user: null, history: [], meta: {}, refs: {kegiatan:[], hasil:[], dictionary:{}}, teachers: [], isAdmin: false,
             isHistoryLoaded: false, selectedDate: null,
             
             init: function() {
@@ -500,11 +531,40 @@
                 lucide.createIcons();
             },
 
+            showToast: function(message, type = 'success') {
+                const container = document.getElementById('toast-container');
+                const toast = document.createElement('div');
+                toast.className = `toast ${type}`;
+                
+                let icon = '';
+                if(type === 'success') icon = '<i data-lucide="check-circle" class="text-emerald-500 flex-shrink-0" width="20"></i>';
+                else if(type === 'error') icon = '<i data-lucide="alert-circle" class="text-red-500 flex-shrink-0" width="20"></i>';
+                else icon = '<i data-lucide="info" class="text-blue-500 flex-shrink-0" width="20"></i>';
+
+                toast.innerHTML = `
+                    ${icon}
+                    <div class="text-sm font-medium text-slate-700 leading-snug">${message}</div>
+                `;
+                
+                container.appendChild(toast);
+                lucide.createIcons();
+                
+                // Auto remove
+                setTimeout(() => {
+                    toast.style.animation = 'fadeOut 0.3s forwards';
+                    setTimeout(() => toast.remove(), 300);
+                }, 3500);
+            },
+
             fetchRefs: async function() {
                 try {
                     const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'get_ref'})}).then(r=>r.json());
                     if(r.success) { 
-                        this.refs = {kegiatan: r.kegiatan, hasil: r.hasil};
+                        this.refs = {
+                            kegiatan: r.kegiatan || [], 
+                            hasil: r.hasil || [],
+                            dictionary: r.dictionary || {} // Simpan kamus
+                        };
                         if(!this.user && r.city) APP_CITY = r.city;
                     }
                 } catch(e){}
@@ -574,9 +634,14 @@
                         if(this.user.kota) APP_CITY = this.user.kota;
                         this.checkAdminStatus();
                         this.isHistoryLoaded = false;
+                        this.showToast(`Selamat datang, ${this.user.nama}`, 'success');
                         this.navigate('dashboard');
-                    } else alert(r.message);
-                } catch(e){alert("Error Login")}
+                    } else {
+                        this.showToast(r.message, 'error');
+                    }
+                } catch(e){
+                    this.showToast("Gagal terhubung ke server", 'error');
+                }
                 this.toggleLoading(false);
             },
 
@@ -642,7 +707,7 @@
                 
                 let attachmentHtml = '';
                 if (item.fotoUrl && item.fotoUrl.startsWith('http')) {
-                    attachmentHtml = `<a href="${item.fotoUrl}" target="_blank" class="text-primary hover:text-orange-700 bg-orange-50 p-2 rounded-lg transition-transform hover:scale-105 shadow-sm"><i data-lucide="image" width="16" height="16"></i></a>`;
+                    attachmentHtml = `<a href="${item.fotoUrl}" target="_blank" class="text-primary hover:text-orange-700 bg-orange-50 p-2 rounded-lg transition-transform hover:scale-110 shadow-sm"><i data-lucide="image" width="16" height="16"></i></a>`;
                 }
 
                 const timeLabel = (item.jamMulai && item.jamSelesai) 
@@ -840,8 +905,11 @@
                         this.closeForm(); 
                         this.fetchHistory(true); 
                         this.fetchRefs(); 
-                    } else alert(r.message);
-                } catch(e){alert("Gagal simpan")}
+                        this.showToast("Data berhasil disimpan", 'success');
+                    } else this.showToast(r.message, 'error');
+                } catch(e){
+                    this.showToast("Gagal menyimpan data", 'error');
+                }
                 this.toggleLoading(false);
             },
             deleteItem: async function(id) {
@@ -849,8 +917,15 @@
                 this.toggleLoading(true);
                 try {
                      const r = await fetch(APPS_SCRIPT_URL, {method:'POST', body:JSON.stringify({action:'delete', id, nip: this.user.nip})}).then(x=>x.json());
-                     if(r.success) this.fetchHistory(true); 
-                } catch(e){}
+                     if(r.success) {
+                        this.fetchHistory(true); 
+                        this.showToast("Data berhasil dihapus", 'success');
+                     } else {
+                        this.showToast("Gagal menghapus data", 'error');
+                     }
+                } catch(e){
+                     this.showToast("Terjadi kesalahan", 'error');
+                }
                 this.toggleLoading(false);
             },
 
@@ -875,7 +950,7 @@
             handleImage: async function(inp) {
                 let file = inp.files[0];
                 if(!file) return;
-                if(file.size > 10*1024*1024) { alert("Max 10MB"); return; }
+                if(file.size > 10*1024*1024) { this.showToast("Maksimal ukuran foto 10MB", 'error'); return; }
                 this.toggleLoading(true);
                 try {
                     if(file.type === "image/heic" || file.name.toLowerCase().endsWith(".heic")) {
@@ -883,7 +958,7 @@
                             const blob = await heic2any({blob: file, toType: "image/jpeg", quality: 0.8});
                             file = Array.isArray(blob) ? blob[0] : blob;
                         } catch(err) {
-                            alert("Gagal konversi HEIC: " + err.message); this.toggleLoading(false); return;
+                            this.showToast("Gagal konversi HEIC: " + err.message, 'error'); this.toggleLoading(false); return;
                         }
                     }
                     const reader = new FileReader();
@@ -904,7 +979,7 @@
                         img.src = e.target.result;
                     };
                     reader.readAsDataURL(file);
-                } catch(e) { alert("Error process image"); this.toggleLoading(false); }
+                } catch(e) { this.showToast("Gagal memproses gambar", 'error'); this.toggleLoading(false); }
             },
             clearImage: function() {
                 document.getElementById('final-photo-base64').value = "";
@@ -923,7 +998,14 @@
                     if(m.length) {
                         m.forEach(x => {
                              const d = document.createElement('div'); d.className='suggestion-item'; d.innerText=x;
-                             d.onclick=()=>{inp.value=x; lst.classList.add('hidden-view');}
+                             d.onclick=()=>{
+                                 inp.value=x; 
+                                 lst.classList.add('hidden-view');
+                                 // AUTOFILL LOGIC
+                                 if(id === 'inp-kegiatan' && this.refs.dictionary && this.refs.dictionary[x.toLowerCase()]) {
+                                     document.getElementById('inp-hasil').value = this.refs.dictionary[x.toLowerCase()];
+                                 }
+                             }
                              lst.appendChild(d);
                         });
                         lst.classList.remove('hidden-view');
@@ -932,7 +1014,7 @@
                 document.onclick = (e) => { if(e.target!==inp && e.target!==lst) lst.classList.add('hidden-view'); }
             },
             toggleVoice: function(id) {
-                if(!('webkitSpeechRecognition' in window)) return alert("Tidak support voice");
+                if(!('webkitSpeechRecognition' in window)) return this.showToast("Browser tidak support voice input", 'error');
                 const r = new window.webkitSpeechRecognition();
                 r.lang='id-ID';
                 document.getElementById('btn-voice-'+id).classList.add('text-primary');
@@ -983,8 +1065,8 @@
                         el.classList.remove('hidden-view');
                         await html2pdf().set({margin:0.3, filename:`Laporan_${this.user.nama}.pdf`, image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2}, jsPDF:{unit:'in',format:'a4', orientation:'landscape'}}).from(el).save();
                         el.classList.add('hidden-view');
-                    } else alert("Tidak ada data");
-                } catch(err){alert("Gagal print")}
+                    } else this.showToast("Tidak ada data untuk dicetak", 'info');
+                } catch(err){this.showToast("Gagal mencetak laporan", 'error')}
                 this.toggleLoading(false);
             },
             downloadExcel: async function() {
@@ -1001,8 +1083,8 @@
                          const uri = URL.createObjectURL(blob);
                          const a = document.createElement("a"); a.href=uri; a.download=res.filename || "Laporan.xlsx";
                          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-                     } else alert("Gagal download: " + res.message);
-                } catch(err){alert("Error download")}
+                     } else this.showToast("Gagal download: " + res.message, 'error');
+                } catch(err){this.showToast("Gagal mengunduh Excel", 'error')}
                 this.toggleLoading(false);
             }
         };
