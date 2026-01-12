@@ -4,9 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Jurnal SDN 3 Krisak</title>
-    <!-- Favicon Image -->
     <link rel="icon" href="https://i.imgur.com/NIlN3oW.png" type="image/png">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -35,11 +33,8 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- HTML2PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- HEIC2ANY -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 
     <style>
@@ -99,18 +94,14 @@
 </head>
 <body class="bg-surface text-onSurface h-screen flex overflow-hidden font-sans selection:bg-orange-200 selection:text-orange-900">
 
-    <!-- TOAST CONTAINER -->
     <div id="toast-container"></div>
 
-    <!-- LOADING OVERLAY -->
     <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/90 z-[70] flex items-center justify-center flex-col backdrop-blur-sm">
         <div class="animate-spin text-primary mb-4"><i data-lucide="loader-2" width="48" height="48"></i></div>
         <p class="font-medium text-slate-500 tracking-wide">Memuat Data...</p>
     </div>
 
-    <!-- SIDEBAR -->
     <aside id="sidebar" class="w-64 flex-shrink-0 bg-white border-r border-slate-200 hidden-view flex-col h-full shadow-lg z-20">
-        <!-- Header Sidebar -->
         <div class="p-6 border-b border-orange-100 flex items-center gap-3 bg-gradient-to-br from-[#FF9000] to-[#FF5500] text-white">
             <div class="w-14 h-14 bg-white rounded-xl flex items-center justify-center shadow-sm backdrop-blur-sm flex-shrink-0 p-1">
                 <img src="https://i.imgur.com/NIlN3oW.png" alt="Logo SDN 3 Krisak" class="w-full h-full object-contain">
@@ -133,7 +124,6 @@
             <button onclick="app.navigate('calendar')" class="w-full text-left px-4 py-3 rounded-xl hover:bg-orange-50 hover:text-primary transition-all duration-200 flex items-center gap-3 font-medium text-slate-500 nav-btn group" data-target="calendar">
                 <i data-lucide="calendar-days" width="20" class="group-hover:scale-110 transition-transform"></i> Kalender
             </button>
-            <!-- Menu Monitor / Statistik -->
             <button onclick="app.navigate('monitor')" id="nav-monitor" class="hidden-view w-full text-left px-4 py-3 rounded-xl hover:bg-orange-50 hover:text-primary transition-all duration-200 flex items-center gap-3 font-medium text-slate-500 nav-btn group" data-target="monitor">
                 <i data-lucide="shield-check" id="nav-monitor-icon" width="20" class="group-hover:scale-110 transition-transform"></i> 
                 <span id="nav-monitor-text">Monitor KS</span>
@@ -150,12 +140,9 @@
         </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="flex-grow flex flex-col h-full overflow-hidden relative bg-[#fdfbf7]">
         
-        <!-- LOGIN VIEW -->
         <div id="view-login" class="absolute inset-0 z-50 bg-[#FF9000] flex items-center justify-center overflow-hidden">
-             <!-- Background & Pattern -->
              <div class="absolute inset-0 bg-gradient-to-br from-[#FF9000] via-[#FF6B00] to-[#E65100]"></div>
              <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 24px 24px;"></div>
              
@@ -185,7 +172,6 @@
              </div>
         </div>
 
-        <!-- DASHBOARD VIEW -->
         <div id="view-dashboard" class="hidden-view flex flex-col h-full p-8 overflow-hidden">
             <div class="flex justify-between items-center mb-8">
                 <div>
@@ -200,7 +186,6 @@
                 </div>
             </div>
 
-            <!-- Stats Cards -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                  <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.05)] flex items-center gap-5 group hover:border-orange-200 transition-colors">
                      <div class="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:bg-blue-600 group-hover:text-white transition-colors duration-300 shadow-sm"><i data-lucide="calendar-check" width="28" height="28"></i></div>
@@ -216,10 +201,8 @@
                  </button>
             </div>
 
-            <!-- Card List Container (Replaces Table) -->
             <div id="dashboard-list-container" class="flex-grow overflow-y-auto pr-2 space-y-4 pb-20">
-                <!-- Cards will be injected here -->
-            </div>
+                </div>
 
             <template id="template-empty">
                 <div id="empty-state" class="p-16 text-center text-slate-400 flex flex-col items-center justify-center h-full">
@@ -232,8 +215,7 @@
             </template>
         </div>
         
-        <!-- CALENDAR VIEW -->
-         <div id="view-calendar" class="hidden-view flex flex-col h-full p-8 overflow-hidden">
+        <div id="view-calendar" class="hidden-view flex flex-col h-full p-8 overflow-hidden">
              <h2 class="text-3xl font-bold mb-8 text-slate-800">Kalender Kegiatan</h2>
              <div class="flex-grow flex gap-8 overflow-hidden">
                  <div class="flex-grow bg-white border border-slate-200 rounded-2xl p-8 overflow-y-auto shadow-sm">
@@ -254,13 +236,11 @@
              </div>
          </div>
 
-        <!-- MONITOR / STATISTIK VIEW -->
         <div id="view-monitor" class="hidden-view flex flex-col h-full p-8 overflow-hidden">
              <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-bold flex items-center gap-3 text-slate-800" id="monitor-page-title">
                     <i data-lucide="shield-check" class="text-primary"></i> Monitor Kinerja
                 </h2>
-                <!-- Filter only for KS -->
                 <div id="admin-filter-container" class="flex gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm hidden-view">
                     <select id="admin-filter-guru" onchange="app.fetchAdminHistory()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm min-w-[200px] font-semibold text-slate-700 focus:ring-2 focus:ring-orange-100 outline-none"></select>
                     <input type="date" id="admin-start" onchange="app.fetchAdminHistory()" class="px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-semibold text-slate-700 focus:ring-2 focus:ring-orange-100 outline-none">
@@ -269,7 +249,6 @@
                 </div>
             </div>
 
-            <!-- ADMIN VIEW: TABLE -->
             <div id="admin-view" class="flex-grow overflow-auto border border-slate-200 rounded-2xl bg-white shadow-sm hidden-view">
                 <table class="w-full text-left border-collapse">
                     <thead class="bg-slate-50 sticky top-0 z-10 border-b border-slate-200">
@@ -285,7 +264,6 @@
                 </table>
             </div>
 
-            <!-- TEACHER STATS VIEW -->
             <div id="teacher-stats-view" class="flex-grow overflow-y-auto hidden-view">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-sm">
@@ -313,11 +291,9 @@
             </div>
         </div>
 
-        <!-- PROFILE VIEW -->
         <div id="view-profile" class="hidden-view p-8 max-w-5xl mx-auto w-full overflow-y-auto">
             <h2 class="text-3xl font-bold mb-8 text-slate-800">Profil & Laporan</h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <!-- Profile Card -->
                 <div class="md:col-span-1 bg-white p-0 rounded-3xl border border-slate-200 shadow-sm overflow-hidden text-center relative">
                     <div class="bg-gradient-to-r from-orange-400 to-orange-600 h-32 relative overflow-hidden">
                         <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/diamond-upholstery.png')]"></div>
@@ -344,7 +320,6 @@
                     </div>
                 </div>
 
-                <!-- Report Card -->
                 <div class="md:col-span-2 bg-white p-8 rounded-3xl border border-slate-200 shadow-sm flex flex-col justify-center">
                     <h3 class="font-bold text-xl mb-6 flex items-center gap-3 text-slate-800"><div class="p-2 bg-blue-50 text-blue-600 rounded-lg"><i data-lucide="printer"></i></div> Cetak Laporan Kinerja</h3>
                     <div class="bg-blue-50/50 p-6 rounded-2xl border border-blue-100 mb-8">
@@ -377,10 +352,8 @@
 
     </main>
 
-    <!-- FORM MODAL (LANDSCAPE LAYOUT) -->
     <div id="modal-form" class="hidden-view fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl overflow-hidden flex flex-col h-auto max-h-[95vh] animate-[scaleIn_0.2s_ease-out]">
-            <!-- Header -->
             <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-white sticky top-0 z-10">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 bg-orange-50 rounded-full flex items-center justify-center text-primary"><i data-lucide="pen-tool" width="20"></i></div>
@@ -393,7 +366,6 @@
                 <input type="hidden" id="inp-id">
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-0 h-full">
-                    <!-- LEFT COLUMN: INPUTS -->
                     <div class="p-8 space-y-6 border-b md:border-b-0 md:border-r border-slate-100">
                         <div class="grid grid-cols-3 gap-5">
                             <div class="col-span-1">
@@ -413,14 +385,18 @@
                         <div class="relative">
                              <div class="flex justify-between items-center mb-2">
                                 <label class="block text-[10px] font-bold uppercase text-slate-400 tracking-wider">Uraian Kegiatan</label>
-                                <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan" class="text-slate-400 hover:text-primary transition-colors p-1"><i data-lucide="mic" width="16"></i></button>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="app.generateAI()" class="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-lg text-[10px] font-bold shadow-md hover:shadow-indigo-200 hover:scale-105 active:scale-95 transition-all">
+                                        <i data-lucide="sparkles" width="12"></i> AI Magic
+                                    </button>
+                                    <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan" class="text-slate-400 hover:text-primary transition-colors p-1"><i data-lucide="mic" width="16"></i></button>
+                                </div>
                             </div>
-                            <textarea id="inp-kegiatan" rows="8" required class="w-full px-4 py-3 border border-slate-200 rounded-xl resize-none focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none placeholder-slate-300 text-sm font-medium leading-relaxed bg-slate-50 focus:bg-white transition-all" placeholder="Deskripsikan kegiatan Anda secara detail..."></textarea>
+                            <textarea id="inp-kegiatan" rows="8" required class="w-full px-4 py-3 border border-slate-200 rounded-xl resize-none focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none placeholder-slate-300 text-sm font-medium leading-relaxed bg-slate-50 focus:bg-white transition-all" placeholder="Ketik kata kunci (misal: Rapat Dinas), lalu tekan tombol AI Magic..."></textarea>
                             <div id="suggest-kegiatan" class="suggestion-list hidden-view rounded-b-xl shadow-lg border-t-0"></div>
                         </div>
                     </div>
 
-                    <!-- RIGHT COLUMN: OUTPUT & PHOTO -->
                     <div class="p-8 space-y-6 bg-slate-50/50">
                         <div class="relative">
                             <div class="flex justify-between items-center mb-2">
@@ -455,7 +431,6 @@
                     </div>
                 </div>
 
-                <!-- Footer Actions -->
                 <div class="p-5 border-t border-slate-100 flex justify-end gap-3 bg-white">
                     <button type="button" onclick="app.closeForm()" class="px-6 py-3 rounded-xl text-slate-500 font-bold hover:bg-slate-50 transition-colors">Batal</button>
                     <button type="submit" id="btn-save" class="px-8 py-3 bg-gradient-to-r from-[#FF9000] to-[#FF5500] hover:from-[#FF7700] hover:to-[#E64A19] text-white rounded-xl font-bold shadow-lg shadow-orange-200 hover:shadow-orange-300 transition-all transform active:scale-95">Simpan Data</button>
@@ -464,7 +439,6 @@
         </div>
     </div>
     
-    <!-- PDF HIDDEN CONTAINER -->
     <div id="report-container" class="hidden-view">
         <div class="flex items-center gap-4 mb-2 border-b-4 border-double border-black pb-4">
              <div class="w-20 h-20 flex items-center justify-center">
@@ -500,6 +474,7 @@
 
     <script>
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
+        const AI_API_URL = "https://script.google.com/macros/s/AKfycbwAlZHamJDjnH3rjhvB-eQs4y88B6QFAMXcALsXgsZd09HoGmYVIavc51kPg0c1_tY-6A/exec";
         let APP_CITY = "Jakarta";
 
         const app = {
@@ -555,6 +530,39 @@
                     setTimeout(() => toast.remove(), 300);
                 }, 3500);
             },
+
+            // === FUNGSI GENERATOR AI (BARU) ===
+            generateAI: async function() {
+                const keywordInput = document.getElementById('inp-kegiatan');
+                const keyword = keywordInput.value.trim();
+
+                if (!keyword || keyword.length < 3) {
+                    this.showToast("Ketik minimal 3 huruf kata kunci dulu (misal: Rapat)", "error");
+                    keywordInput.focus();
+                    return;
+                }
+
+                this.toggleLoading(true);
+                try {
+                    const response = await fetch(AI_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ keyword: keyword, action: 'search' })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        document.getElementById('inp-kegiatan').value = data.kegiatan;
+                        document.getElementById('inp-hasil').value = data.hasil;
+                        this.showToast("Berhasil disusun oleh AI!", "success");
+                    } else {
+                        this.showToast("Gagal: " + (data.message || "AI Error"), "error");
+                    }
+                } catch (e) {
+                    this.showToast("Gagal koneksi ke server AI.", "error");
+                }
+                this.toggleLoading(false);
+            },
+            // ==================================
 
             fetchRefs: async function() {
                 try {
