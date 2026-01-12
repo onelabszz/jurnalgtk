@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Jurnal SDN 3 Krisak Mobile</title>
     <link rel="icon" href="https://i.imgur.com/NIlN3oW.png" type="image/png">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -32,11 +31,8 @@
         }
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- HTML2PDF -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <!-- HEIC2ANY -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/heic2any/0.0.4/heic2any.min.js"></script>
 
     <style>
@@ -67,6 +63,7 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
         .toast.error { background: rgba(239, 68, 68, 0.95); }
+        .toast.success { background: rgba(16, 185, 129, 0.95); }
         @keyframes slideDown { from { opacity: 0; transform: translateY(-30px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
         
         /* Calendar */
@@ -92,7 +89,6 @@
 
     <div id="toast-container"></div>
 
-    <!-- Loading Overlay -->
     <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/95 z-[70] flex items-center justify-center flex-col backdrop-blur-sm">
         <div class="animate-spin text-primary mb-4">
             <i data-lucide="loader-2" width="48" height="48"></i>
@@ -100,7 +96,6 @@
         <p class="text-slate-500 font-medium tracking-wide text-sm">Sedang Memproses...</p>
     </div>
 
-    <!-- Image Modal Viewer -->
     <div id="modal-image" class="hidden-view fixed inset-0 bg-black/95 z-[60] flex flex-col items-center justify-center p-4">
         <button onclick="app.closeImage()" class="absolute top-4 right-4 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-white z-20 backdrop-blur">
             <i data-lucide="x" width="24" height="24"></i>
@@ -108,7 +103,6 @@
         <img id="modal-img-display" src="" class="max-w-full max-h-screen object-contain rounded-lg shadow-2xl" crossorigin="anonymous" referrerpolicy="no-referrer">
     </div>
 
-    <!-- IN-APP CAMERA MODAL -->
     <div id="modal-camera" class="hidden-view fixed inset-0 bg-black z-[80] flex flex-col">
         <div class="relative flex-grow bg-black flex items-center justify-center overflow-hidden">
              <video id="camera-stream" autoplay playsinline muted class="w-full h-full object-cover"></video>
@@ -128,12 +122,9 @@
         </div>
     </div>
 
-    <!-- VIEW: LOGIN -->
     <div id="view-login" class="min-h-screen flex flex-col items-center justify-center p-6 bg-[#FF9000] relative overflow-hidden">
-        <!-- Official Pattern & Gradient -->
         <div class="absolute inset-0 bg-gradient-to-br from-[#FF9000] via-[#FF6B00] to-[#E65100]"></div>
         <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 24px 24px;"></div>
-        <!-- Decorative Shapes -->
         <div class="absolute top-[-100px] right-[-100px] w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
         <div class="absolute bottom-[-50px] left-[-50px] w-64 h-64 bg-yellow-400/20 rounded-full blur-3xl"></div>
         
@@ -163,16 +154,13 @@
                     MASUK APLIKASI <i data-lucide="arrow-right" width="20"></i>
                 </button>
             </form>
-            <p class="mt-12 text-[10px] text-white/50 font-medium tracking-wide">Official App &copy; 2024</p>
+            <p class="mt-12 text-[10px] text-white/50 font-medium tracking-wide">Official App © 2024</p>
         </div>
     </div>
 
-    <!-- VIEW: DASHBOARD -->
     <div id="view-dashboard" class="hidden-view pb-32 px-5 max-w-2xl mx-auto min-h-screen flex flex-col">
-        <!-- Header -->
         <div class="pt-8 pb-5 flex justify-between items-center bg-[#fdfbf7] sticky top-0 z-30 transition-all">
             <div class="flex items-center gap-4">
-                 <!-- USER AVATAR (REPLACES LOGO) -->
                  <div class="w-12 h-12 rounded-full bg-gradient-to-br from-[#FF9000] to-[#FF5500] text-white flex items-center justify-center font-bold text-xl border-4 border-white shadow-md">
                     <span id="header-user-avatar">G</span>
                  </div>
@@ -181,13 +169,10 @@
                      <h2 class="text-lg font-extrabold text-slate-800 leading-none" id="user-name">Guru</h2>
                  </div>
             </div>
-            <!-- RIGHT SIDE EMPTY (CLEANER) -->
             <div></div>
         </div>
         
-        <!-- Summary Card -->
         <div class="bg-gradient-to-br from-[#FF9000] via-[#FF6B00] to-[#FF5500] rounded-[2rem] p-6 text-white shadow-xl shadow-orange-200 mb-8 relative overflow-hidden">
-             <!-- Abstract Pattern -->
              <div class="absolute right-[-20px] top-[-20px] w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
              <div class="absolute left-[-20px] bottom-[-20px] w-32 h-32 bg-yellow-400/20 rounded-full blur-2xl"></div>
              
@@ -205,7 +190,6 @@
              </div>
         </div>
         
-        <!-- Filter -->
         <div class="flex gap-3 mb-6">
             <select id="filter-month" class="bg-white text-slate-700 px-5 py-3 rounded-2xl text-sm font-bold shadow-sm border border-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-100 flex-1 appearance-none"></select>
             <select id="filter-year" class="bg-white text-slate-700 px-5 py-3 rounded-2xl text-sm font-bold shadow-sm border border-slate-100 focus:outline-none focus:ring-2 focus:ring-orange-100 w-28 appearance-none text-center"></select>
@@ -245,7 +229,6 @@
         </template>
     </div>
 
-    <!-- VIEW: MONITOR (DUAL MODE: ADMIN & TEACHER STATS) -->
     <div id="view-monitor" class="hidden-view pb-32 px-5 max-w-2xl mx-auto min-h-screen flex flex-col bg-[#fdfbf7]">
          <div class="pt-8 pb-5 flex justify-center items-center sticky top-0 bg-[#fdfbf7] z-30">
             <span class="text-xl font-extrabold text-slate-800 flex items-center gap-2" id="monitor-title">
@@ -253,7 +236,6 @@
             </span>
         </div>
         
-        <!-- ADMIN CONTROLS (Only visible to KS) -->
         <div id="admin-controls" class="hidden-view">
             <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 mb-6 space-y-4">
                 <div>
@@ -276,7 +258,6 @@
             <div id="admin-list-container" class="space-y-4 flex-grow"></div>
         </div>
 
-        <!-- TEACHER STATS (Visible to Non-KS) -->
         <div id="teacher-stats" class="hidden-view space-y-6">
              <div class="bg-white p-6 rounded-[2rem] shadow-sm border border-slate-100 text-center">
                  <p class="text-sm font-bold text-slate-400 uppercase tracking-wider mb-4">Statistik Pribadi</p>
@@ -304,14 +285,12 @@
         </div>
     </div>
 
-    <!-- VIEW: PROFILE -->
     <div id="view-profile" class="hidden-view pb-32 px-5 max-w-2xl mx-auto min-h-screen flex flex-col bg-[#fdfbf7]">
          <div class="pt-8 pb-5 flex justify-center items-center sticky top-0 bg-[#fdfbf7] z-30">
             <span class="text-xl font-extrabold text-slate-800">Profil Pengguna</span>
         </div>
 
         <div class="bg-white rounded-[2.5rem] p-8 shadow-sm border border-slate-100 mb-6 text-center relative overflow-hidden">
-            <!-- Orange Gradient Header -->
             <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-r from-[#FF9000] to-[#FF5500]"></div>
             
             <div class="relative mt-12 mb-4">
@@ -369,7 +348,6 @@
         <p class="text-center text-[10px] text-slate-300 py-4 uppercase tracking-widest font-medium">Official Education App v2.4</p>
     </div>
 
-    <!-- VIEW: FORM -->
     <div id="view-form" class="hidden-view bg-[#fdfbf7] min-h-screen relative z-50">
         <div class="sticky top-0 bg-white/90 backdrop-blur-md z-20 px-5 py-4 flex items-center gap-4 border-b border-slate-100 shadow-sm">
             <button onclick="app.navigate('dashboard')" class="w-10 h-10 rounded-full bg-slate-50 hover:bg-slate-100 flex items-center justify-center text-slate-600 transition">
@@ -401,17 +379,22 @@
                 </div>
             </div>
 
-            <!-- Kegiatan -->
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative group focus-within:border-orange-200 transition-colors">
                 <div class="flex justify-between items-center mb-2">
                     <label class="text-[10px] font-bold text-primary uppercase tracking-wider">Uraian Kegiatan</label>
-                    <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan" class="text-slate-400 hover:text-primary transition-colors p-1"><i data-lucide="mic" width="20"></i></button>
+                    
+                    <div class="flex gap-2">
+                         <button type="button" onclick="app.generateAI()" class="flex items-center gap-1 px-3 py-1 bg-gradient-to-r from-violet-600 to-indigo-600 text-white rounded-full text-[10px] font-bold shadow-md hover:shadow-indigo-200 active:scale-95 transition-all">
+                            <i data-lucide="sparkles" width="12"></i> AI Magic
+                        </button>
+
+                         <button type="button" onclick="app.toggleVoice('kegiatan')" id="btn-voice-kegiatan" class="text-slate-400 hover:text-primary transition-colors p-1"><i data-lucide="mic" width="20"></i></button>
+                    </div>
                 </div>
-                <textarea id="inp-kegiatan" required rows="3" class="w-full p-0 bg-transparent border-none focus:ring-0 text-slate-800 placeholder-slate-300 resize-none font-medium text-base leading-relaxed" placeholder="Tulis kegiatan di sini..."></textarea>
+                <textarea id="inp-kegiatan" required rows="3" class="w-full p-0 bg-transparent border-none focus:ring-0 text-slate-800 placeholder-slate-300 resize-none font-medium text-base leading-relaxed" placeholder="Ketik kata kunci (misal: Rapat), lalu tekan tombol AI Magic..."></textarea>
                 <div id="suggest-kegiatan" class="suggestion-list hidden-view rounded-b-2xl shadow-xl"></div>
             </div>
 
-            <!-- Hasil -->
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative group focus-within:border-orange-200 transition-colors">
                 <div class="flex justify-between items-center mb-2">
                     <label class="text-[10px] font-bold text-primary uppercase tracking-wider">Hasil / Output</label>
@@ -421,7 +404,6 @@
                 <div id="suggest-hasil" class="suggestion-list hidden-view rounded-b-2xl shadow-xl"></div>
             </div>
 
-            <!-- Foto -->
             <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm">
                 <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-4">Dokumentasi</label>
                 <div class="flex flex-col gap-4">
@@ -451,7 +433,6 @@
         </form>
     </div>
 
-    <!-- BOTTOM NAV (Floating Style) -->
     <nav id="bottom-nav" class="hidden-view fixed bottom-6 left-6 right-6 h-[72px] bg-white/90 backdrop-blur-xl border border-white/50 rounded-[2rem] flex justify-between items-center z-40 shadow-[0_8px_30px_rgba(0,0,0,0.08)] px-2">
         <button onclick="app.switchTab('list')" class="nav-item group flex flex-col items-center justify-center gap-1 w-20 h-full rounded-2xl hover:bg-slate-50/50 transition-all" data-target="dashboard">
             <div class="p-1.5 rounded-xl group-[.text-primary]:bg-orange-50 transition-colors">
@@ -473,7 +454,6 @@
             </button>
         </div>
         
-        <!-- MONITOR/STATS BUTTON -->
         <button onclick="app.navigate('monitor')" id="nav-monitor-stats" class="nav-item group flex flex-col items-center justify-center gap-1 w-20 h-full rounded-2xl hover:bg-slate-50/50 transition-all" data-target="monitor">
             <div class="p-1.5 rounded-xl group-[.text-primary]:bg-orange-50 transition-colors">
                 <i data-lucide="shield-check" width="22" class="text-slate-400 group-hover:text-primary transition-colors" id="nav-icon-monitor"></i>
@@ -489,7 +469,6 @@
         </button>
     </nav>
     
-    <!-- PDF Generation Container -->
     <div id="report-container" class="hidden-view p-4 bg-white text-black font-serif">
         <div class="flex items-center gap-4 mb-2 border-b-4 border-double border-black pb-4">
              <div class="w-16 h-16 logo-placeholder grayscale"></div>
@@ -530,7 +509,9 @@
     </div>
 
     <script>
+        // === KONFIGURASI API ===
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxZdbql7FcEdv8808ikm9fpaYRylggG1alsCRZ18uFdJk2iYjCPqbGfuClhBCW7t0RclA/exec";
+        const AI_API_URL = "https://script.google.com/macros/s/AKfycbwAlZHamJDjnH3rjhvB-eQs4y88B6QFAMXcALsXgsZd09HoGmYVIavc51kPg0c1_tY-6A/exec";
         let APP_CITY = "Jakarta";
 
         const app = {
@@ -570,15 +551,48 @@
             showToast: function(message, type = 'normal') {
                 const container = document.getElementById('toast-container');
                 const toast = document.createElement('div');
-                toast.className = 'toast ' + (type === 'error' ? 'error' : '');
+                toast.className = 'toast ' + (type === 'error' ? 'error' : (type === 'success' ? 'success' : ''));
                 
-                let icon = type === 'error' ? '<i data-lucide="alert-circle" width="18" class="text-red-300"></i>' : '<i data-lucide="check-circle" width="18" class="text-emerald-400"></i>';
+                let icon = type === 'error' ? '<i data-lucide="alert-circle" width="18"></i>' : (type === 'success' ? '<i data-lucide="check-circle" width="18"></i>' : '<i data-lucide="info" width="18"></i>');
                 
                 toast.innerHTML = `<span>${message}</span> ${icon}`;
                 container.appendChild(toast);
                 lucide.createIcons();
                 setTimeout(() => { toast.style.opacity = '0'; toast.style.transform = 'translateY(-10px)'; setTimeout(() => toast.remove(), 300); }, 3000);
             },
+
+            // === FUNGSI GENERATOR AI (BARU) ===
+            generateAI: async function() {
+                const keywordInput = document.getElementById('inp-kegiatan');
+                const keyword = keywordInput.value.trim();
+
+                if (!keyword || keyword.length < 3) {
+                    this.showToast("Ketik minimal 3 huruf kata kunci dulu (misal: Rapat)", "error");
+                    keywordInput.focus();
+                    return;
+                }
+
+                this.toggleLoading(true);
+                try {
+                    const response = await fetch(AI_API_URL, {
+                        method: 'POST',
+                        body: JSON.stringify({ keyword: keyword, action: 'search' })
+                    });
+                    const data = await response.json();
+
+                    if (data.status === 'success') {
+                        document.getElementById('inp-kegiatan').value = data.kegiatan;
+                        document.getElementById('inp-hasil').value = data.hasil;
+                        this.showToast("Berhasil disusun oleh AI!", "success");
+                    } else {
+                        this.showToast("Gagal: " + (data.message || "AI Error"), "error");
+                    }
+                } catch (e) {
+                    this.showToast("Gagal koneksi ke server AI.", "error");
+                }
+                this.toggleLoading(false);
+            },
+            // ==================================
 
             // CAMERA LOGIC
             startCamera: async function() {
@@ -1084,10 +1098,8 @@
                 // Estetik: White card, Rounded, Left Accent Border, Shadow
                 el.className = "relative bg-white p-5 rounded-2xl shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] border border-slate-100 group overflow-hidden transition-all hover:shadow-orange-100 mb-4";
                 el.innerHTML = `
-                    <!-- Orange Accent Line -->
                     <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-[#FF9000] to-[#FF5500]"></div>
                     
-                    <!-- Content -->
                     <div class="pl-2">
                         <div class="flex justify-between items-start mb-2">
                             <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">${dayName}, ${dateNum} ${monthName}</span>
@@ -1099,7 +1111,6 @@
                         <h3 class="text-sm font-bold text-slate-800 leading-snug mb-1 line-clamp-2">${item.kegiatan}</h3>
                         <p class="text-xs text-slate-500 line-clamp-2 leading-relaxed mb-3">${item.hasil}</p>
                         
-                        <!-- Footer: Time & Actions -->
                         <div class="flex justify-between items-center border-t border-slate-50 pt-3 mt-2">
                             <span class="px-2.5 py-1 rounded-lg bg-orange-50 text-primary text-[10px] font-bold border border-orange-100 flex items-center gap-1">
                                 <i data-lucide="clock" width="10"></i> ${timeLabel}
