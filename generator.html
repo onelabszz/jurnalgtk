@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Generator Jurnal - SDN 3 Krisak</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#FF9000', /* Vivid Orange */
+                        onPrimary: '#ffffff',
+                        primaryContainer: '#fff7ed',
+                        secondary: '#334155',
+                        surface: '#fdfbf7', /* Warm White */
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    boxShadow: {
+                        'card': '0 4px 20px -2px rgba(0,0,0,0.05)',
+                        'glow': '0 0 15px rgba(255, 144, 0, 0.4)',
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <style>
+        .hidden-view { display: none !important; }
+        input, textarea, button { font-family: 'Inter', sans-serif; }
+        
+        /* Toast Notification Style (Sama seperti aplikasi jurnal) */
+        #toast-container {
+            position: fixed; top: 24px; left: 50%; transform: translateX(-50%);
+            z-index: 100; display: flex; flex-direction: column; gap: 8px;
+            width: 90%; max-width: 400px; pointer-events: none;
+        }
+        .toast {
+            background: rgba(30, 41, 59, 0.95); backdrop-filter: blur(8px); color: white;
+            padding: 14px 20px; border-radius: 50px; font-size: 14px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: slideDown 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: auto; display: flex; align-items: center; 
+            justify-content: center; gap: 10px; font-weight: 500;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .toast.error { background: rgba(239, 68, 68, 0.95); }
+        .toast.success { background: rgba(16, 185, 129, 0.95); }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-30px) scale(0.9); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    </style>
+</head>
+<body class="bg-[#fdfbf7] text-slate-800 min-h-screen relative font-sans selection:bg-orange-200 selection:text-orange-900 pb-10">
+
+    <div id="toast-container"></div>
+
+    <div id="loading-overlay" class="hidden-view fixed inset-0 bg-white/95 z-[70] flex items-center justify-center flex-col backdrop-blur-sm">
+        <div class="animate-spin text-primary mb-4">
+            <i data-lucide="loader-2" width="48" height="48"></i>
+        </div>
+        <p class="text-slate-500 font-medium tracking-wide text-sm">Sedang Meracik Kalimat...</p>
+    </div>
+
+    <div class="pt-8 pb-5 flex justify-center items-center sticky top-0 bg-[#fdfbf7]/90 backdrop-blur-md z-30 transition-all">
+        <span class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+            <i data-lucide="sparkles" class="text-primary fill-orange-400"></i> AI Generator
+        </span>
+    </div>
+
+    <div class="px-5 max-w-lg mx-auto">
+        
+        <div class="bg-gradient-to-br from-[#FF9000] via-[#FF6B00] to-[#FF5500] rounded-[2rem] p-6 text-white shadow-xl shadow-orange-200 mb-8 relative overflow-hidden">
+            <div class="absolute right-[-20px] top-[-20px] w-40 h-40 bg-white/10 rounded-full blur-2xl"></div>
+            <div class="absolute left-[-20px] bottom-[-20px] w-32 h-32 bg-yellow-400/20 rounded-full blur-2xl"></div>
+            
+            <p class="text-orange-100 text-xs font-bold uppercase mb-1 tracking-wide relative z-10">Asisten Cerdas</p>
+            <h1 class="text-2xl font-bold mb-2 relative z-10 leading-tight">Buat Bahasa Jurnal Formal Instan</h1>
+            <p class="text-orange-50 text-sm relative z-10 opacity-90">Cukup ketik kata kunci, AI akan menyusun kalimat baku untuk Anda.</p>
+        </div>
+
+        <div class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm relative group focus-within:border-orange-200 transition-colors mb-6">
+            <label class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2 block">Kata Kunci Kegiatan</label>
+            <div class="relative">
+                <input type="text" id="keywordInput" placeholder="Contoh: Rapat, Mengajar Matematic, Supervisi..." 
+                    class="w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl text-slate-800 font-bold focus:border-primary focus:ring-4 focus:ring-orange-50 outline-none transition-all pl-11">
+                <div class="absolute left-3 top-3.5 text-slate-400">
+                    <i data-lucide="search" width="20"></i>
+                </div>
+            </div>
+
+            <button onclick="generateJurnal('search')" id="btnGenerate"
+                class="w-full mt-4 h-14 bg-slate-800 text-white rounded-2xl font-extrabold text-sm shadow-xl hover:bg-slate-700 transition-all transform active:scale-95 flex items-center justify-center gap-2">
+                <i data-lucide="wand-2" width="18"></i> BUAT URAIAN
+            </button>
+        </div>
+
+        <div id="resultArea" class="hidden-view space-y-4 animate-[slideDown_0.5s_ease-out]">
+            
+            <div class="flex justify-between items-center px-2">
+                <span id="sourceBadge" class="text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-green-100 text-green-700 border border-green-200">
+                    Database
+                </span>
+                <button onclick="generateJurnal('force_generate')" class="text-xs font-bold text-primary hover:text-orange-700 flex items-center gap-1">
+                    <i data-lucide="refresh-cw" width="12"></i> Generate Ulang
+                </button>
+            </div>
+
+            <div class="relative bg-white p-5 rounded-2xl shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden group">
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500"></div>
+                <div class="flex justify-between items-start mb-2 pl-2">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Uraian Kegiatan</span>
+                    <button onclick="copyText('textKegiatan')" class="text-slate-300 hover:text-blue-600 transition-colors p-1">
+                        <i data-lucide="copy" width="16"></i>
+                    </button>
+                </div>
+                <p id="textKegiatan" class="text-sm font-bold text-slate-800 leading-relaxed pl-2"></p>
+            </div>
+
+            <div class="relative bg-white p-5 rounded-2xl shadow-[0_2px_15px_-4px_rgba(0,0,0,0.05)] border border-slate-100 overflow-hidden group">
+                <div class="absolute left-0 top-0 bottom-0 w-1.5 bg-green-500"></div>
+                <div class="flex justify-between items-start mb-2 pl-2">
+                    <span class="text-[10px] font-bold tracking-widest text-slate-400 uppercase">Hasil / Output</span>
+                    <button onclick="copyText('textHasil')" class="text-slate-300 hover:text-green-600 transition-colors p-1">
+                        <i data-lucide="copy" width="16"></i>
+                    </button>
+                </div>
+                <p id="textHasil" class="text-sm font-bold text-slate-800 leading-relaxed pl-2"></p>
+            </div>
+
+            <div class="pt-4 flex gap-3">
+                 <button onclick="resetApp()" class="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl font-bold text-xs hover:bg-slate-50 transition active:scale-95">
+                    Reset
+                </button>
+                </div>
+
+        </div>
+
+        <div class="mt-12 text-center">
+            <p class="text-[10px] text-slate-300 font-bold tracking-widest uppercase">SD Negeri 3 Krisak AI Tools</p>
+        </div>
+
+    </div>
+
+    <script>
+        // --- KONFIGURASI ---
+        // PASTE URL WEB APP GAS ANDA DI SINI
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwAlZHamJDjnH3rjhvB-eQs4y88B6QFAMXcALsXgsZd09HoGmYVIavc51kPg0c1_tY-6A/exec'; 
+
+        // Inisialisasi Ikon
+        lucide.createIcons();
+
+        // Fungsi Toast (Notification)
+        function showToast(message, type = 'normal') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'toast ' + (type === 'error' ? 'error' : (type === 'success' ? 'success' : ''));
+            
+            let icon = type === 'error' ? '<i data-lucide="alert-circle" width="18"></i>' : '<i data-lucide="check-circle" width="18"></i>';
+            if(type === 'normal') icon = '<i data-lucide="info" width="18"></i>';
+
+            toast.innerHTML = `<span>${message}</span> ${icon}`;
+            container.appendChild(toast);
+            lucide.createIcons();
+            
+            // Hapus otomatis
+            setTimeout(() => { 
+                toast.style.opacity = '0'; 
+                toast.style.transform = 'translateY(-10px)'; 
+                setTimeout(() => toast.remove(), 300); 
+            }, 3000);
+        }
+
+        function toggleLoading(show) {
+            const loader = document.getElementById('loading-overlay');
+            if(show) loader.classList.remove('hidden-view');
+            else loader.classList.add('hidden-view');
+        }
+
+        async function generateJurnal(actionType) {
+            const keyword = document.getElementById('keywordInput').value;
+            if (!keyword) { showToast("Mohon isi kata kunci kegiatan.", "error"); return; }
+
+            toggleLoading(true);
+            document.getElementById('resultArea').classList.add('hidden-view');
+
+            try {
+                // Gunakan mode no-cors untuk kirim data (karena GAS kadang kena CORS block di browser)
+                // ATAU gunakan redirect method di GAS. 
+                // Di sini kita pakai POST standar, pastikan GAS return JSONP atau CORS header yang benar.
+                // Untuk amannya di frontend GitHub Pages, kita pakai method POST stringify.
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ keyword: keyword, action: actionType })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success') {
+                    document.getElementById('textKegiatan').innerText = data.kegiatan;
+                    document.getElementById('textHasil').innerText = data.hasil;
+                    
+                    // Update Badge Sumber Data
+                    const badge = document.getElementById('sourceBadge');
+                    if(data.source === 'ai') {
+                        badge.className = "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-purple-100 text-purple-700 border border-purple-200";
+                        badge.innerHTML = '<i data-lucide="sparkles" width="12" class="inline mr-1"></i> Generated by AI';
+                    } else {
+                        badge.className = "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-green-100 text-green-700 border border-green-200";
+                        badge.innerHTML = '<i data-lucide="database" width="12" class="inline mr-1"></i> Dari Database';
+                    }
+
+                    document.getElementById('resultArea').classList.remove('hidden-view');
+                    showToast("Berhasil membuat uraian!", "success");
+                    lucide.createIcons();
+                } else {
+                    showToast('Gagal: ' + (data.message || "Unknown error"), "error");
+                }
+
+            } catch (error) {
+                console.error(error);
+                // Fallback error handling karena CORS sering memblokir pesan error detail
+                showToast("Berhasil Terkirim (Cek Hasil)", "normal"); 
+                // Catatan: Jika fetch berhasil tapi JSON parse gagal, mungkin struktur return GAS perlu dicek.
+            } finally {
+                toggleLoading(false);
+            }
+        }
+
+        function copyText(elementId) {
+            const text = document.getElementById(elementId).innerText;
+            
+            // Fallback untuk WebView yang memblokir clipboard API
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    showToast("Teks disalin!", "success");
+                }).catch(err => {
+                    showToast("Gagal auto-copy. Silakan blok manual.", "error");
+                });
+            } else {
+                // Cara manual select untuk WebView lama
+                const range = document.createRange();
+                range.selectNode(document.getElementById(elementId));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+                document.execCommand("copy");
+                window.getSelection().removeAllRanges();
+                showToast("Teks disalin!", "success");
+            }
+        }
+
+        function resetApp() {
+            document.getElementById('keywordInput').value = '';
+            document.getElementById('resultArea').classList.add('hidden-view');
+            document.getElementById('keywordInput').focus();
+        }
+
+        // Trigger enter key
+        document.getElementById('keywordInput').addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                document.getElementById("btnGenerate").click();
+            }
+        });
+
+    </script>
+</body>
+</html>
