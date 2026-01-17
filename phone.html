@@ -1069,7 +1069,7 @@
                 const dateNum = dateObj.getDate();
                 const dayName = dateObj.toLocaleDateString('id-ID', { weekday: 'short' });
                 const monthName = dateObj.toLocaleDateString('id-ID', { month: 'short' });
-                const safeItem = encodeURIComponent(JSON.stringify(item));
+                const safeItem = encodeURIComponent(JSON.stringify(item)).replace(/'/g, "%27");
                 
                 let attachmentHtml = '';
                 if (item.fotoUrl && item.fotoUrl.startsWith('http')) {
